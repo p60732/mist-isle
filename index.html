@@ -322,7 +322,10 @@ function addItem(id,ix,iz,rot){const g=new THREE.Group();FURN[id].b(g);const c=c
   const it={id,ix,iz,rot,g,cols:[]};cellsOf(id,ix,iz,rot).forEach(([a,b])=>{occ[a+','+b]=it;const t=tileCenter(a,b);const col={x:t.x,z:t.z,r:0.62};it.cols.push(col);furnCol.push(col);});items.push(it);return it;}
 function removeItem(it){scene.remove(it.g);cellsOf(it.id,it.ix,it.iz,it.rot).forEach(([a,b])=>{delete occ[a+','+b];});it.cols.forEach(c=>furnCol.splice(furnCol.indexOf(c),1));items.splice(items.indexOf(it),1);}
 addItem('f_bed',0,0,0);addItem('f_chest',1,0,0);
-function addFixed(fid,ix,iz){const it=addItem(fid,ix,iz,0);it.fixed=true;const c=centerOf(fid,ix,iz,0);STATIONS.push({id:FIXED[fid].id,name:FIXED[fid].name,x:c.x,z:c.z,r:1.4,inside:true});return it;}
+function addFixed(fid,ix,iz,rot=0){const it=addItem(fid,ix,iz,rot);it.fixed=true;const c=centerOf(fid,ix,iz,rot);STATIONS.push({id:FIXED[fid].id,name:FIXED[fid].name,x:c.x,z:c.z,r:1.4,inside:true});return it;}
+function stationRemove(it){const i=STATIONS.findIndex(o=>o.inside&&o.id===FIXED[it.id].id);if(i>=0)STATIONS.splice(i,1);}
+// 工作台類（固定）與一般家具統一由這裡放下
+function placeItem(id,ix,iz,rot){return FIXED[id]?addFixed(id,ix,iz,rot):addItem(id,ix,iz,rot);}
 addFixed('st_caul',2,0);addFixed('st_bench',5,0);addFixed('st_metal',8,0);addFixed('st_loom',8,3);
 // lantern tree
 const lt=new THREE.Group();lt.position.set(0,0,-13);scene.add(lt);colliders.push({x:0,z:-13,r:1.5});
@@ -847,20 +850,20 @@ function dropGhost(){if(!ghost)return;scene.remove(ghost.g);scene.remove(ghost.m
 function layUI(){
   const ids=Object.keys(FURN).filter(k=>inv[k]>0);
   layItems.innerHTML=ids.length?ids.map(k=>'<button class="fi'+(ghost&&!ghost.from&&ghost.id===k?' on':'')+'" type="button" data-f="'+k+'">'+svg(k,34)+NAME[k]+'<span class="n">'+inv[k]+'</span></button>').join(''):'<span class="note">背包裡沒有家具。到工具台做木椅、木桌、盆栽等，再回來擺。</span>';
-  if(ghost){layBtns.innerHTML='<button class="pbtn" type="button" data-l="rot">旋轉</button>'+(ghost.from?'<button class="pbtn" type="button" data-l="bag">收回背包</button>':'')+'<button class="pbtn" type="button" data-l="cancel">取消</button><button class="pbtn go" type="button" data-l="put"'+(ghost.ok?'':' disabled')+'>放下</button>';
+  if(ghost){layBtns.innerHTML='<button class="pbtn" type="button" data-l="rot">旋轉</button>'+(ghost.from&&!FIXED[ghost.id]?'<button class="pbtn" type="button" data-l="bag">收回背包</button>':'')+'<button class="pbtn" type="button" data-l="cancel">取消</button><button class="pbtn go" type="button" data-l="put"'+(ghost.ok?'':' disabled')+'>放下</button>';
     layHint.textContent=ghost.ok?NAME[ghost.id]+'：點地板或拖曳移動位置，按「旋轉」調整方向，確定後按「放下」。':'這個位置放不下（紅色格子）：可能超出房間、壓到別的家具、門口或主角站的位置。';}
   else{layBtns.innerHTML='';layHint.textContent='選下面一件家具開始擺放；也可以直接點房間裡已經擺好的家具來移動它。';}
 }
 function startLayout(){layout=true;document.body.classList.add('laying');lay.hidden=false;grid.visible=true;jx=jy=0;knob.style.transform='';layUI();}
 function endLayout(){if(ghost)cancelGhost();layout=false;document.body.classList.remove('laying');lay.hidden=true;grid.visible=false;hotbarUI();}
-function cancelGhost(){if(!ghost)return;if(ghost.from)addItem(ghost.id,ghost.from.ix,ghost.from.iz,ghost.from.rot);dropGhost();layUI();}
+function cancelGhost(){if(!ghost)return;if(ghost.from)placeItem(ghost.id,ghost.from.ix,ghost.from.iz,ghost.from.rot);dropGhost();layUI();}
 $('layDone').addEventListener('click',endLayout);
 lay.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   if(b.dataset.f){if(ghost&&ghost.from)cancelGhost();else dropGhost();makeGhost(b.dataset.f,null);}
   else if(b.dataset.l==='rot'){ghost.rot=(ghost.rot+1)%4;updateGhost();}
   else if(b.dataset.l==='cancel'){cancelGhost();}
-  else if(b.dataset.l==='bag'){if(!fits({k:ghost.id,n:1})){toast(FULL,2000);return;}inv[ghost.id]=(inv[ghost.id]||0)+1;const n=NAME[ghost.id];dropGhost();layUI();toast('收回了：'+n,1200);}
-  else if(b.dataset.l==='put'){if(!ghost.ok)return;addItem(ghost.id,ghost.ix,ghost.iz,ghost.rot);if(!ghost.from)inv[ghost.id]--;const n=NAME[ghost.id];dropGhost();layUI();toast('擺好了：'+n,1000);}
+  else if(b.dataset.l==='bag'){if(FIXED[ghost.id]){toast('工作台是固定的，只能移動位置。',1400);return;}if(!fits({k:ghost.id,n:1})){toast(FULL,2000);return;}inv[ghost.id]=(inv[ghost.id]||0)+1;const n=NAME[ghost.id];dropGhost();layUI();toast('收回了：'+n,1200);}
+  else if(b.dataset.l==='put'){if(!ghost.ok)return;placeItem(ghost.id,ghost.ix,ghost.iz,ghost.rot);if(!ghost.from)inv[ghost.id]--;const n=NAME[ghost.id];dropGhost();layUI();toast('擺好了：'+n,1000);}
 });
 const ray=new THREE.Raycaster(),ndc=new THREE.Vector2(),gplane=new THREE.Plane(new THREE.Vector3(0,1,0),0),hitP=new THREE.Vector3();
 function tileAt(e){const r=canvas.getBoundingClientRect();ndc.set((e.clientX-r.left)/r.width*2-1,-((e.clientY-r.top)/r.height)*2+1);ray.setFromCamera(ndc,camera);if(!ray.ray.intersectPlane(gplane,hitP))return null;return [Math.floor((hitP.x-(RX-HALF))/TILE),Math.floor((hitP.z-(RZ-HALF))/TILE)];}
@@ -869,7 +872,7 @@ let dragging=false,downXY=null;
 canvas.addEventListener('pointerdown',e=>{if(!layout)return;downXY={x:e.clientX,y:e.clientY};if(ghost){dragging=true;moveGhostTo(tileAt(e));}});
 canvas.addEventListener('pointermove',e=>{if(layout&&dragging)moveGhostTo(tileAt(e));});
 canvas.addEventListener('pointerup',e=>{if(!layout)return;const wasDrag=dragging;dragging=false;if(wasDrag||!downXY)return;const moved=Math.hypot(e.clientX-downXY.x,e.clientY-downXY.y);downXY=null;if(moved>10)return;
-  const t=tileAt(e);if(!t)return;const it=occ[t[0]+','+t[1]];if(it&&!it.fixed){removeItem(it);makeGhost(it.id,{ix:it.ix,iz:it.iz,rot:it.rot});}});
+  const t=tileAt(e);if(!t)return;const it=occ[t[0]+','+t[1]];if(it){const from={ix:it.ix,iz:it.iz,rot:it.rot};if(it.fixed)stationRemove(it);removeItem(it);makeGhost(it.id,from);}});
 
 // ===== storage chest panel & sleep =====
 function storeSlots(){let n=storeTools.axe.length+storeTools.pick.length;Object.keys(store).forEach(k=>{if(store[k]>0)n+=Math.ceil(store[k]/(isF(k)?9:99));});return n;}
@@ -954,10 +957,10 @@ function frame(now){
   if(bumpT>0){bumpT-=dt;const k=Math.max(0,bumpT)/0.18;body.scale.set(1+0.18*k,1-0.16*k,1+0.18*k);}else body.scale.set(1,1,1);
 
   // camera
-  if(layout)camPos.lerp(new THREE.Vector3(RX,19,RZ+11),1-Math.pow(0.0005,dt));
+  if(layout)camPos.lerp(new THREE.Vector3(RX,40,RZ+5),1-Math.pow(0.0005,dt));
   else if(inside||inCave)camPos.lerp(new THREE.Vector3(p.x,p.y+12,p.z+11),1-Math.pow(0.002,dt));
   else camPos.lerp(new THREE.Vector3(p.x,p.y+21,p.z+18),1-Math.pow(0.002,dt));
-  camera.position.copy(camPos);if(layout)camLook.set(RX,0,RZ+1);else camLook.set(p.x,p.y+1,p.z-(inside?2:3));camera.lookAt(camLook);
+  camera.position.copy(camPos);if(layout)camLook.set(RX,0,RZ+3);else camLook.set(p.x,p.y+1,p.z-(inside?2:3));camera.lookAt(camLook);
 
   // moth
   moth.position.set(p.x+Math.cos(t*1.3)*1.4,2.6+Math.sin(t*2.1)*0.3,p.z+Math.sin(t*1.3)*1.4);
@@ -1058,7 +1061,7 @@ function frame(now){
 const SAVE_KEY='mist-isle-save',SAVE_V=1;
 function saveGame(){if(skipSave)return;try{const pos=inside?[7.3,7.1]:inCave?[CAVE_E.x,CAVE_E.z+4.3]:[player.position.x,player.position.z];
   const d={v:SAVE_V,inv,tools,store,storeTools,BAG_MAX,day,gameMin,stamina,purified,timeRing,accOwned,accWorn,seen:[...seen],coins,dq,hot:hotCfg,
-    furn:items.filter(it=>!it.fixed).map(it=>({id:it.id,ix:it.ix,iz:it.iz,rot:it.rot})),pos};
+    furn:items.filter(it=>!it.fixed).map(it=>({id:it.id,ix:it.ix,iz:it.iz,rot:it.rot})),fixedPos:items.filter(it=>it.fixed).map(it=>({id:it.id,ix:it.ix,iz:it.iz,rot:it.rot})),pos};
   localStorage.setItem(SAVE_KEY,JSON.stringify(d));}catch(e){}}
 function loadGame(){let d=null;try{d=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');}catch(e){return false;}
   if(!d||d.v!==SAVE_V)return false;
@@ -1067,6 +1070,10 @@ function loadGame(){let d=null;try{d=JSON.parse(localStorage.getItem(SAVE_KEY)||
   BAG_MAX=d.BAG_MAX||20;day=d.day||1;gameMin=(typeof d.gameMin==='number')?d.gameMin:gameMin;
   stamina=(typeof d.stamina==='number')?d.stamina:stamina;coins=d.coins||0;dq=(d.dq&&d.dq.day===day)?d.dq:{day,prog:{},claimed:{}};timeRing=!!d.timeRing;accOwned=Object.assign({},d.accOwned||{});if(timeRing)accOwned.ring=true;accWorn=(Array.isArray(d.accWorn)?d.accWorn:(d.acc?[d.acc]:[])).filter(k=>accOwned[k]).slice(0,ACC_SLOTS);seen=new Set((d.seen||[]).filter(k=>TRIAL_MATS.indexOf(k)>=0));
   items.filter(it=>!it.fixed).forEach(removeItem);
+  (d.fixedPos||[]).forEach(f=>{const it=items.find(x=>x.fixed&&x.id===f.id);if(!it||!FIXED[f.id])return;const o={ix:it.ix,iz:it.iz,rot:it.rot};
+    stationRemove(it);removeItem(it);
+    const free=cellsOf(f.id,f.ix,f.iz,f.rot).every(([a,b])=>a>=0&&b>=0&&a<NT&&b<NT&&!occ[a+','+b]);
+    if(free)addFixed(f.id,f.ix,f.iz,f.rot);else addFixed(f.id,o.ix,o.iz,o.rot);});
   (d.furn||[]).forEach(f=>{if(FURN[f.id]&&cellsOf(f.id,f.ix,f.iz,f.rot).every(([a,b])=>!occ[a+','+b]))addItem(f.id,f.ix,f.iz,f.rot);});
   if(d.purified){purified=true;forestMist.mat.opacity=0;forestMist.arr.forEach(m=>{m.visible=false;});}
   if(d.pos){player.position.x=d.pos[0];player.position.z=d.pos[1];}
