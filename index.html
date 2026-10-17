@@ -369,7 +369,7 @@ function caveMat(c,tex){return bend(new THREE.MeshToonMaterial({color:c,map:tex|
 function caveWall(lv,x1,z1,x2,z2){const X1=lv.ox+x1,Z1=lv.oz+z1,X2=lv.ox+x2,Z2=lv.oz+z2;
   const len=Math.hypot(X2-X1,Z2-Z1),ang=Math.atan2(Z2-Z1,X2-X1);
   const tex=rtex(lv.wall,0x2A211B,lv.id*100+Math.round(X1*3+Z1*7+X2*5+Z2*11),Math.max(1,len/2.5),1.2);
-  const m=part(new THREE.BoxGeometry(len+0.4,4.2,1.2),caveMat(0xFFFFFF,tex),(X1+X2)/2,2.1,(Z1+Z2)/2,lv.group,0.06);m.rotation.y=-ang;
+  const m=part(new THREE.BoxGeometry(len+0.4,1.5,1.2),caveMat(0xFFFFFF,tex),(X1+X2)/2,0.75,(Z1+Z2)/2,lv.group,0.06);m.rotation.y=-ang;
   const n=Math.max(1,Math.ceil(len/0.4));for(let i=0;i<=n;i++){const t=i/n;lv.cols.push({x:X1+(X2-X1)*t,z:Z1+(Z2-Z1)*t,r:0.15});}}
 function caveOre(lv,d){d.p.forEach(([x,z])=>{const wx=lv.ox+x,wz=lv.oz+z;
   const parts=[part(new THREE.DodecahedronGeometry(0.9,0),toon(0x6E6A66),wx,0.6,wz,lv.group,0.08),
@@ -411,8 +411,8 @@ function buildCaveLevel(lv){lv.group=new THREE.Group();lv.group.visible=false;sc
   lv.lanterns.forEach(([x,z])=>caveLamp(lv,x,z));
   caveLadder(lv);
   if(lv.exit){const wood=toon(0x5C3F2A);
-    [-1.5,1.5].forEach(x=>part(new THREE.BoxGeometry(0.8,4.6,0.8),wood,lv.ox+x,2.3,lv.oz+7,lv.group,0.06));
-    part(new THREE.BoxGeometry(3.8,0.6,0.8),wood,lv.ox,4.4,lv.oz+7,lv.group,0.06);
+    [-1.5,1.5].forEach(x=>part(new THREE.BoxGeometry(0.6,2.0,0.6),wood,lv.ox+x,1.0,lv.oz+7,lv.group,0.06));
+    part(new THREE.BoxGeometry(3.6,0.4,0.6),wood,lv.ox,2.1,lv.oz+7,lv.group,0.06);
     const ex=new THREE.Mesh(new THREE.PlaneGeometry(2,1),toon(0x7FC8E8));ex.rotation.x=-Math.PI/2;ex.position.set(lv.ox+lv.exit.x,0.02,lv.oz+lv.exit.z);lv.group.add(ex);}
 }
 // mound + entrance (outside the cave floor)
