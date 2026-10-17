@@ -27,14 +27,13 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--sky);color:var(-
 .dot{width:14px;height:14px;border-radius:50%}
 .toggle{pointer-events:auto;border:0;font:inherit;font-size:12px;color:var(--ink);cursor:pointer}
 .toggle:focus-visible,#act:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
-#toast{z-index:6;left:50%;bottom:calc(190px + env(safe-area-inset-bottom,0px));transform:translate(-50%,8px);width:max-content;max-width:min(calc(100vw - 32px),420px);box-sizing:border-box;font-size:15px;line-height:1.55;text-align:center;opacity:0;transition:opacity .3s,transform .3s}
+#toast{z-index:6;left:50%;bottom:calc(232px + env(safe-area-inset-bottom,0px));transform:translate(-50%,8px);width:max-content;max-width:min(calc(100vw - 32px),420px);box-sizing:border-box;font-size:15px;line-height:1.55;text-align:center;opacity:0;transition:opacity .3s,transform .3s}
 #toast.on{opacity:1;transform:translate(-50%,0)}
 #joy{position:fixed;z-index:3;left:max(24px,calc(env(safe-area-inset-left,0px) + 12px));bottom:calc(28px + env(safe-area-inset-bottom,0px));width:120px;height:120px;border-radius:50%;background:rgba(255,248,236,.45);border:3px solid rgba(255,248,236,.9);touch-action:none}
 #knob{position:absolute;left:36px;top:36px;width:48px;height:48px;border-radius:50%;background:var(--paper);box-shadow:0 3px 0 var(--paper-edge)}
 #act{position:fixed;z-index:3;right:max(28px,calc(env(safe-area-inset-right,0px) + 16px));bottom:calc(40px + env(safe-area-inset-bottom,0px));width:96px;height:96px;border-radius:50%;border:0;background:var(--amber);box-shadow:0 5px 0 var(--amber-deep);color:#fff;font:700 19px var(--f-ui);cursor:pointer;touch-action:manipulation}
 #act[data-a="none"]{background:#B9AE9C;box-shadow:0 5px 0 #8E846F}
 #act[data-a="purify"]{background:#7E5FC4;box-shadow:0 5px 0 #5A4196}
-#help{left:50%;bottom:calc(150px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);font-size:13px;color:var(--ink);background:rgba(255,248,236,.85);border-radius:999px;padding:6px 14px;white-space:nowrap;transition:opacity .6s}
 #mini{position:fixed;z-index:3;left:max(12px,env(safe-area-inset-left,0px));top:calc(84px + env(safe-area-inset-top,0px));width:112px;height:112px;border-radius:50%;border:4px solid var(--paper);box-shadow:0 3px 0 var(--paper-edge);background:#6EC3DE;cursor:pointer;touch-action:manipulation}
 #miniN{position:fixed;z-index:4;left:calc(max(12px,env(safe-area-inset-left,0px)) + 52px);top:calc(78px + env(safe-area-inset-top,0px));width:18px;height:18px;border-radius:50%;background:var(--ink);color:#fff;font:700 10px/18px var(--f-ui);text-align:center;pointer-events:none}
 #mapOv{position:fixed;inset:0;z-index:10;background:rgba(36,42,58,.55);display:flex;align-items:center;justify-content:center;padding:calc(12px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
@@ -45,6 +44,38 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--sky);color:var(-
 .mbtn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 #mapTitle{position:absolute;left:12px;top:12px;font-size:15px;font-weight:700}
 #mapHint{position:absolute;left:12px;bottom:12px;font-size:12px;color:var(--ink-soft)}
+#tr .money{display:flex;align-items:center;gap:8px;font-weight:700;font-size:16px;border-radius:999px;padding:6px 14px 6px 8px}
+#tr .sta{display:flex;align-items:center;gap:8px;border-radius:999px;padding:6px 10px;font-size:12px;color:var(--ink-soft)}
+#staBar{width:86px;height:10px;border-radius:5px;background:#EADCC2;overflow:hidden}#staFill{height:10px;background:#6DBB58;width:100%;transition:width .3s}
+#side{position:fixed;z-index:3;right:max(12px,env(safe-area-inset-right,0px));top:calc(112px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:10px}
+.sbtn{position:relative;width:58px;height:58px;border-radius:18px;border:0;background:var(--paper);box-shadow:0 3px 0 var(--paper-edge);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:700 11px var(--f-ui);color:var(--ink);cursor:pointer;padding:0}
+.sbtn:focus-visible,.slot:focus-visible,.pbtn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.badge{position:absolute;top:-6px;right:-8px;padding:0 6px;border-radius:9px;background:#F7C948;font-size:10px;line-height:17px}
+#hotbar{position:fixed;z-index:3;left:50%;transform:translateX(-50%);bottom:calc(168px + env(safe-area-inset-bottom,0px));display:flex;gap:8px}
+.slot{position:relative;width:52px;height:52px;border-radius:14px;border:3px solid transparent;background:var(--paper);box-shadow:0 3px 0 var(--paper-edge);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.slot.empty{opacity:.55;cursor:default}
+.slot .n{position:absolute;right:4px;bottom:1px;font:700 11px var(--f-ui);color:var(--ink)}
+.slot .dur{position:absolute;left:6px;right:6px;bottom:4px;height:4px;border-radius:2px;background:#EADCC2;overflow:hidden}.slot .dur i{display:block;height:4px;background:#6DBB58}
+.slot.used{border-color:var(--amber)}
+#act[data-a="need"]{background:#B9AE9C;box-shadow:0 5px 0 #8E846F}
+#panel{position:fixed;inset:0;z-index:9;background:rgba(36,42,58,.45);display:flex;align-items:flex-end;justify-content:center}
+#sheet{width:min(100%,520px);max-height:78%;overflow:auto;background:#F6EBD6;border-radius:26px 26px 0 0;padding:16px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));box-sizing:border-box;display:flex;flex-direction:column;gap:12px}
+#sheet h2{margin:0;font-size:20px}
+.shead{display:flex;justify-content:space-between;align-items:center}
+.pbtn{border:0;border-radius:14px;background:var(--paper);box-shadow:0 3px 0 var(--paper-edge);font:700 15px var(--f-ui);color:var(--ink);cursor:pointer;min-height:44px;padding:0 14px}
+.pbtn.go{background:var(--amber);box-shadow:0 3px 0 var(--amber-deep);color:#fff}
+.pbtn[disabled]{background:#CFC6B5;box-shadow:none;color:#fff;cursor:default}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.cell{position:relative;aspect-ratio:1/1;border-radius:16px;background:var(--paper);box-shadow:0 3px 0 var(--paper-edge);border:3px solid transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.cell.on{border-color:var(--amber)}
+.cell .n{position:absolute;right:6px;bottom:3px;font:700 12px var(--f-ui);color:var(--ink)}
+.info{background:var(--paper);border-radius:16px;padding:12px 14px;font-size:14px;line-height:1.6}
+.rec{display:flex;align-items:center;gap:12px;background:var(--paper);border-radius:18px;padding:10px 12px;box-shadow:0 3px 0 var(--paper-edge)}
+.rec .ic{width:48px;height:48px;border-radius:14px;background:#F6EBD6;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rec .tx{flex-grow:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.rec .nm{font-weight:700;font-size:16px}.rec .need{font-size:12px;color:var(--ink-soft)}
+.ok{color:#2F6B2A;font-weight:700}.lack{color:#B4372B;font-weight:700}
+.note{font-size:12px;color:var(--ink-soft)}
 @media (prefers-reduced-motion:reduce){#toast{transition:none}}
 </style>
 </head>
@@ -57,12 +88,19 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--sky);color:var(-
   <div class="card"><div class="t1" id="clock">春季 · 第 1 天 · 07:00</div><div class="t2" id="region">燈芯島 · 小谷村</div></div>
 </div>
 <div class="hud" id="tr">
-  <div class="card" id="inv" style="display:grid;grid-template-columns:auto auto;gap:2px 12px;font-size:13px;font-weight:700;padding:8px 12px"><span id="iMush">蘑菇 0</span><span id="iWood">木材 0</span><span id="iStone">石頭 0</span><span id="iCrys">水晶 0</span></div>
-  <div class="card chip"><span class="dot" style="background:#9B7BD4"></span><span id="potN">淨霧藥劑 1</span></div>
-  <button class="card toggle" id="curveBtn" type="button">地平線彎曲：開</button>
+  <div class="card money"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="9" fill="#F7C948" stroke="#C99A1E" stroke-width="2"></circle><rect x="9.5" y="6" width="3" height="10" rx="1.5" fill="#C99A1E"></rect></svg><span>1,240</span></div>
+  <div class="card sta">體力<div id="staBar"><div id="staFill"></div></div></div>
 </div>
+<div id="side">
+  <button class="sbtn" type="button" data-p="bag"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6z"></path><path d="M9 8V6a3 3 0 0 1 6 0v2"></path></svg>背包</button>
+  <button class="sbtn" type="button" data-p="craft"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"></path><path d="M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"></path></svg>合成</button>
+  <button class="sbtn" type="button" data-p="dress"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4L3 7l2 4 3-1v10h8V10l3 1 2-4-5-3a4 4 0 0 1-8 0z"></path></svg>換裝</button>
+  <button class="sbtn" type="button" data-p="inn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-6 8 6"></path><path d="M6 10v9h12v-9"></path><path d="M10 19v-5h4v5"></path></svg>旅人小屋<span class="badge">限定</span></button>
+  <button class="sbtn" type="button" data-p="quest"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4h11v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2h12"></path><path d="M7 4a2 2 0 0 0-2 2v10"></path></svg>任務</button>
+</div>
+<div id="hotbar" role="toolbar" aria-label="快捷列"></div>
 <div class="hud card" id="toast" role="status" aria-live="polite"></div>
-<div class="hud" id="help">拖曳左下搖桿移動 · 電腦可用 WASD 或方向鍵</div>
+<div id="panel" hidden><div id="sheet" role="dialog" aria-modal="true"></div></div>
 <canvas id="mini" aria-label="小地圖，點一下開啟大地圖" role="button" tabindex="0"></canvas><div id="miniN">北</div>
 <div id="mapOv" hidden>
   <div id="mapBox">
@@ -267,10 +305,79 @@ ring.rotation.x=-Math.PI/2;ring.position.y=0.2;scene.add(ring);
 const $=id=>document.getElementById(id);
 const toastEl=$('toast');let toastT=0;
 function toast(msg,ms){toastEl.textContent=msg;toastEl.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>toastEl.classList.remove('on'),ms||2800);}
-let inv={mush:0,wood:0,stone:0,crys:0};function invUI(){$('iMush').textContent='蘑菇 '+inv.mush;$('iWood').textContent='木材 '+inv.wood;$('iStone').textContent='石頭 '+inv.stone;$('iCrys').textContent='水晶 '+inv.crys;}
-let potN=1,purified=false,purifyT=-1,curveOn=true;
-$('curveBtn').addEventListener('click',()=>{curveOn=!curveOn;curveU.value=curveOn?CURVE:0;$('curveBtn').textContent='地平線彎曲：'+(curveOn?'開':'關');});
-setTimeout(()=>{$('help').style.opacity=0;},7000);
+const ICON={
+ mush:'<path d="M8 26 Q24 4 40 26 Z" fill="#E8584A"/><path d="M19 26 h10 v14 a3 3 0 0 1 -3 3 h-4 a3 3 0 0 1 -3 -3 Z" fill="#F6EAD2"/>',
+ wood:'<path d="M6 18 h30 a6 10 0 0 1 0 20 h-30 Z" fill="#B07A4A"/><path d="M30 28 a6 10 0 1 0 12 0 a6 10 0 1 0 -12 0 Z" fill="#D9A66E"/>',
+ stone:'<path d="M8 34 L14 16 L30 10 L42 22 L38 38 L18 42 Z" fill="#A9A39A"/><path d="M14 16 L30 10 L28 24 Z" fill="#C7C1B8"/>',
+ crys:'<path d="M24 4 L36 18 L30 44 L18 44 L12 18 Z" fill="#7FC8E8"/><path d="M24 4 L24 44 L18 44 L12 18 Z" fill="#5AA9D1"/>',
+ potion:'<path d="M18 6 h12 v10 l8 12 a12 12 0 0 1 -10 18 h-8 a12 12 0 0 1 -10 -18 l8 -12 Z" fill="#B9A3E6"/><path d="M12 30 h24 a12 12 0 0 1 -10 14 h-4 a12 12 0 0 1 -10 -14 Z" fill="#7E5FC4"/>',
+ axe:'<path d="M21 6 h6 v38 h-6 Z" fill="#B07A4A"/><path d="M27 8 Q44 10 42 26 Q34 22 27 22 Z" fill="#A9A39A"/>',
+ pick:'<path d="M21 10 h6 v34 h-6 Z" fill="#B07A4A"/><path d="M6 16 Q24 2 42 16 Q24 10 6 16 Z" fill="#A9A39A"/>'
+};
+const NAME={mush:'紅帽蘑菇',wood:'木材',stone:'石頭',crys:'藍水晶',potion:'淨霧藥劑',axe:'石斧',pick:'石鎬'};
+const DESC={mush:'長在樹蔭下的蘑菇，隔天會重新長出來。可以直接吃，回復 15 點體力。',wood:'砍樹得到的木材，做工具和家具的基本材料。',stone:'敲石頭得到的石頭，做工具的材料。',crys:'敲石頭時偶爾會掉出來的藍水晶，鍊金的重要材料。',potion:'師父筆記裡的配方。灑向灰霧，可以淨化被蝕污染的霧。',axe:'用來砍樹。每砍一下耐久 -1，歸零就會壞掉。',pick:'用來敲石頭。每敲一下耐久 -1，歸零就會壞掉。'};
+const svg=(k,sz)=>'<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 48 48" aria-hidden="true">'+ICON[k]+'</svg>';
+let inv={mush:0,wood:4,stone:3,crys:0,potion:0};
+let tools={axe:null,pick:null};
+let stamina=100;
+const RECIPES=[
+ {id:'axe',name:'石斧',need:{wood:2,stone:1},make:()=>{tools.axe={dur:15,max:15};},tool:true},
+ {id:'pick',name:'石鎬',need:{wood:2,stone:2},make:()=>{tools.pick={dur:15,max:15};},tool:true},
+ {id:'potion',name:'淨霧藥劑',need:{mush:3,crys:1},make:()=>{inv.potion++;}}
+];
+let purified=false,purifyT=-1,curveOn=true,usedSlot='',usedT=0;
+function staUI(){$('staFill').style.width=stamina+'%';$('staFill').style.background=stamina<25?'#E0663F':'#6DBB58';}
+function hotbarUI(){
+  const slots=[['axe',tools.axe],['pick',tools.pick],['potion',inv.potion],['mush',inv.mush],[null,null]];
+  $('hotbar').innerHTML=slots.map(([k,v])=>{
+    if(!k||!v)return '<button class="slot empty" type="button" tabindex="-1" aria-label="空格"></button>';
+    const tool=typeof v==='object';
+    const extra=tool?'<span class="dur"><i style="width:'+Math.round(v.dur/v.max*100)+'%;background:'+(v.dur/v.max<0.3?'#E0663F':'#6DBB58')+'"></i></span>':'<span class="n">'+v+'</span>';
+    return '<button class="slot'+(usedSlot===k?' used':'')+'" type="button" data-k="'+k+'" aria-label="'+NAME[k]+(tool?'，耐久 '+v.dur:'，'+v+' 個')+'">'+svg(k,34)+extra+'</button>';
+  }).join('');
+}
+$('hotbar').addEventListener('click',e=>{const b=e.target.closest('.slot');if(!b||!b.dataset.k)return;const k=b.dataset.k;
+  if(k==='mush'){if(stamina>=100){toast('體力已經是滿的。',1200);return;}inv.mush--;stamina=Math.min(100,stamina+15);staUI();hotbarUI();toast('吃了紅帽蘑菇，體力 +15。',1300);}
+  else if(k==='axe'||k==='pick'){const t=tools[k];toast(NAME[k]+'：耐久 '+t.dur+' / '+t.max,1300);}
+  else toast(NAME[k]+' '+inv[k]+' 瓶。走到灰霧邊緣就能使用。',1600);});
+// panels
+const panel=$('panel'),sheet=$('sheet');let panelKind='',bagSel='wood';
+function openPanel(k){panelKind=k;panel.hidden=false;jx=jy=0;knob.style.transform='';renderPanel();}
+function closePanel(){panel.hidden=true;panelKind='';}
+panel.addEventListener('click',e=>{if(e.target===panel)closePanel();});
+addEventListener('keydown',e=>{if(e.key==='Escape'&&!panel.hidden)closePanel();if((e.key==='b'||e.key==='B')&&panel.hidden)openPanel('bag');if((e.key==='c'||e.key==='C')&&panel.hidden)openPanel('craft');});
+document.querySelectorAll('.sbtn').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.p;
+  if(k==='bag'||k==='craft')openPanel(k);
+  else toast({dress:'換裝畫面已在 UI 原型裡，M5 接進遊戲。',inn:'旅人小屋（招募、派遣）已在 UI 原型裡，M3 接進遊戲。',quest:'任務畫面已在 UI 原型裡，M4 接進遊戲。'}[k],2200);}));
+function renderPanel(){
+  if(panelKind==='bag'){
+    const keys=Object.keys(inv).filter(k=>inv[k]>0);
+    const toolKeys=Object.keys(tools).filter(k=>tools[k]);
+    const all=toolKeys.concat(keys);
+    if(!all.includes(bagSel))bagSel=all[0]||'';
+    const used=all.length;
+    sheet.innerHTML='<div class="shead"><h2>背包</h2><span class="note">'+used+' / 20 格</span><button class="pbtn" type="button" data-x="close" aria-label="關閉背包">關閉</button></div>'+
+      '<div class="grid">'+all.map(k=>{const t=tools[k];return '<button class="cell'+(k===bagSel?' on':'')+'" type="button" data-sel="'+k+'" aria-label="'+NAME[k]+'">'+svg(k,40)+(t?'<span class="n">'+t.dur+'/'+t.max+'</span>':'<span class="n">'+inv[k]+'</span>')+'</button>';}).join('')+'</div>'+
+      (bagSel?'<div class="info"><b>'+NAME[bagSel]+'</b>　'+(tools[bagSel]?'耐久 '+tools[bagSel].dur+' / '+tools[bagSel].max:'持有 '+inv[bagSel])+'<br>'+DESC[bagSel]+'</div>':'<div class="info">背包是空的。</div>')+
+      (bagSel==='mush'?'<button class="pbtn go" type="button" data-x="eat">吃一個（體力 +15）</button>':'')+
+      '<div class="shead" style="margin-top:4px"><span class="note">畫面設定</span><button class="pbtn" type="button" data-x="curve">地平線彎曲：'+(curveOn?'開':'關')+'</button></div>';
+  }else if(panelKind==='craft'){
+    sheet.innerHTML='<div class="shead"><h2>鍊金工坊</h2><button class="pbtn" type="button" data-x="close" aria-label="關閉合成">關閉</button></div>'+
+      RECIPES.map(r=>{const ok=Object.keys(r.need).every(k=>inv[k]>=r.need[k]);const has=r.tool&&tools[r.id];
+        const need=Object.keys(r.need).map(k=>'<span class="'+(inv[k]>=r.need[k]?'ok':'lack')+'">'+NAME[k]+' '+inv[k]+'/'+r.need[k]+'</span>').join('、');
+        return '<div class="rec"><span class="ic">'+svg(r.id,36)+'</span><span class="tx"><span class="nm">'+r.name+(has?'（耐久 '+has.dur+'/'+has.max+'）':'')+'</span><span class="need">'+need+'</span></span><button class="pbtn go" type="button" data-make="'+r.id+'"'+(ok?'':' disabled')+'>'+(has?'重做':'製作')+'</button></div>';}).join('')+
+      '<div class="note">示範版按下就完成。正式版合成時會有火候、攪拌小遊戲，做得好品質更高。</div>';
+  }
+}
+sheet.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;
+  if(t.dataset.x==='close')closePanel();
+  else if(t.dataset.x==='curve'){curveOn=!curveOn;curveU.value=curveOn?CURVE:0;renderPanel();}
+  else if(t.dataset.x==='eat'){if(stamina>=100){toast('體力已經是滿的。',1200);return;}inv.mush--;stamina=Math.min(100,stamina+15);staUI();hotbarUI();renderPanel();}
+  else if(t.dataset.sel){bagSel=t.dataset.sel;renderPanel();}
+  else if(t.dataset.make){const r=RECIPES.find(x=>x.id===t.dataset.make);Object.keys(r.need).forEach(k=>inv[k]-=r.need[k]);r.make();hotbarUI();renderPanel();toast('做好了：'+r.name+'！',1400);}
+});
+function useTool(k){const t=tools[k];t.dur--;stamina=Math.max(0,stamina-3);usedSlot=k;usedT=0.4;staUI();if(t.dur<=0){tools[k]=null;toast(NAME[k]+'壞掉了！到合成再做一把吧。',2200);}hotbarUI();}
+staUI();hotbarUI();
 
 // joystick + keys
 const joy=$('joy'),knob=$('knob');let jx=0,jy=0,jid=null;
@@ -287,10 +394,11 @@ const actBtn=$('act');let ctx={a:'none'};
 actBtn.addEventListener('click',doAction);
 function doAction(){
   const a=ctx.a;
-  if(a==='pick'){const m=ctx.m;m.alive=false;scene.remove(m.g);inv.mush++;invUI();toast('採到紅帽蘑菇！明天早上會再長出來。',1800);}
-  else if(a==='chop'){const t=ctx.t;t.hits++;t.t=0.32;if(t.hits>=3){t.state='falling';t.t=0;inv.wood+=3;invUI();toast('砍倒了！木材 +3。樹樁明天會再長成樹。',1800);}else{toast('咚！再砍 '+(3-t.hits)+' 下。',900);}}
-  else if(a==='mine'){const r=ctx.r;r.hits++;r.t=0.25;inv.stone++;let msg='石頭 +1';if(Math.random()<0.25){inv.crys++;msg+='，還敲出了藍水晶！';}if(r.hits>=3){r.state='empty';msg+=' 這塊石頭今天敲不出東西了。';}invUI();toast(msg,1600);}
-  else if(a==='purify'){potN--;$('potN').textContent='淨霧藥劑 '+potN;purifyT=0;ring.position.set(player.position.x,0.2,player.position.z);toast('把淨霧藥劑灑向灰霧……',2200);}
+  if(a==='need'){toast(ctx.msg,2200);return;}
+  if(a==='pick'){const m=ctx.m;m.alive=false;scene.remove(m.g);inv.mush++;hotbarUI();toast('採到紅帽蘑菇！明天早上會再長出來。',1800);}
+  else if(a==='chop'){const t=ctx.t;useTool('axe');t.hits++;t.t=0.32;if(t.hits>=3){t.state='falling';t.t=0;inv.wood+=3;hotbarUI();toast('砍倒了！木材 +3。樹樁明天會再長成樹。',1800);}else{toast('咚！再砍 '+(3-t.hits)+' 下。',900);}}
+  else if(a==='mine'){const r=ctx.r;useTool('pick');r.hits++;r.t=0.25;inv.stone++;let msg='石頭 +1';if(Math.random()<0.25){inv.crys++;msg+='，還敲出了藍水晶！';}if(r.hits>=3){r.state='empty';msg+=' 這塊石頭今天敲不出東西了。';}hotbarUI();toast(msg,1600);}
+  else if(a==='purify'){inv.potion--;hotbarUI();purifyT=0;ring.position.set(player.position.x,0.2,player.position.z);toast('把淨霧藥劑灑向灰霧……',2200);}
   else if(a==='tree'){toast('燈芯樹微微發著光。啾燈：「這是大媽媽，整座島的心臟喔！」',3600);}
   else if(a==='spirit'){toast('火苔精：「呼啊……睡了好久。你身上有大媽媽的光呢。」',3800);}
   else if(a==='blocked'){toast(ctx.msg,2600);}
@@ -364,7 +472,7 @@ function frame(now){
   let mx=jx,mz=jy;
   if(keys['a']||keys['arrowleft'])mx-=1;if(keys['d']||keys['arrowright'])mx+=1;
   if(keys['w']||keys['arrowup'])mz-=1;if(keys['s']||keys['arrowdown'])mz+=1;
-  if(mapOpen){mx=0;mz=0;}
+  if(mapOpen||!panel.hidden){mx=0;mz=0;}
   const ml=Math.hypot(mx,mz);
   const p=player.position;
   if(ml>0.08){
@@ -447,13 +555,14 @@ function frame(now){
   let bt=null,btd=1e9;trees.forEach(t=>{if(t.state!=='up'||(t.forest&&!purified))return;const d=Math.hypot(t.x-p.x,t.z-p.z)-t.col.r;if(d<1.3&&d<btd){btd=d;bt=t;}});
   let br=null,brd=1e9;rocks.forEach(r=>{if(r.state!=='full')return;const d=Math.hypot(r.x-p.x,r.z-p.z)-r.r;if(d<1.3&&d<brd){brd=d;br=r;}});
   if(best)ctx={a:'pick',m:best,label:'採集'};
-  else if(br&&(!bt||brd<btd))ctx={a:'mine',r:br,label:'敲石頭'};
-  else if(bt)ctx={a:'chop',t:bt,label:'砍樹'};
-  else if(!purified&&purifyT<0&&p.z<-17&&potN>0)ctx={a:'purify',label:'淨霧'};
+  else if(br&&(!bt||brd<btd))ctx=!tools.pick?{a:'need',label:'敲石頭',msg:'需要石鎬才能敲石頭。打開「合成」做一把吧。'}:stamina<3?{a:'need',label:'敲石頭',msg:'太累了。吃個紅帽蘑菇補體力吧。'}:{a:'mine',r:br,label:'敲石頭'};
+  else if(bt)ctx=!tools.axe?{a:'need',label:'砍樹',msg:'需要石斧才能砍樹。打開「合成」做一把吧。'}:stamina<3?{a:'need',label:'砍樹',msg:'太累了。吃個紅帽蘑菇補體力吧。'}:{a:'chop',t:bt,label:'砍樹'};
+  else if(!purified&&purifyT<0&&p.z<-17)ctx=inv.potion>0?{a:'purify',label:'淨霧'}:{a:'need',label:'淨霧',msg:'還沒有淨霧藥劑。配方：紅帽蘑菇 ×3 ＋ 藍水晶 ×1，到「合成」製作。'};
   else if(purified&&Math.hypot(p.x-spirit.position.x,p.z-spirit.position.z)<4)ctx={a:'spirit',label:'對話'};
   else if(Math.hypot(p.x,p.z+13)<6)ctx={a:'tree',label:'觀察'};
   else ctx={a:'none',label:'互動'};
-  if(actBtn.dataset.a!==ctx.a){actBtn.dataset.a=ctx.a;actBtn.textContent=ctx.label;}
+  if(actBtn.dataset.a!==ctx.a||actBtn.textContent!==ctx.label){actBtn.dataset.a=ctx.a;actBtn.textContent=ctx.label;}
+  if(usedT>0){usedT-=dt;if(usedT<=0){usedSlot='';hotbarUI();}}
 
   {const [c,w,h]=fitCanvas(mini);drawMap(c,w,h,player.position.x,player.position.z,1.15,false);}
   if(mapOpen){const [c,w,h]=fitCanvas(big);drawMap(c,w,h,mcx,mcz,baseScale()*mapZ,true);}
@@ -461,7 +570,7 @@ function frame(now){
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-setTimeout(()=>toast('往北走（畫面上方）到灰霧邊緣，用淨霧藥劑淨化火苔之森。',4200),900);
+setTimeout(()=>toast('拖曳左下搖桿移動。先打開「合成」做石斧和石鎬，採集材料後鍊出淨霧藥劑，淨化北邊的灰霧。',6000),900);
 })();
 </script>
 
