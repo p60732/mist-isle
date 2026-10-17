@@ -430,7 +430,7 @@ const fits=e=>slotsUsed(e)<=BAG_MAX;
 const FULL='背包滿了！先把東西用掉，或把家具擺進家裡。';
 let stamina=100;
 const RECIPES=[
- {id:'axe',st:'bench',name:'簡易斧',need:{branch:5,stone:1},make:()=>{tools.axe.push({kind:'簡易斧',dur:40,max:40,fell:false});},tool:true,note:'耐久 40，砍不倒樹'},
+ {id:'axe',st:'bench',name:'簡易斧',need:{branch:5},make:()=>{tools.axe.push({kind:'簡易斧',dur:40,max:40,fell:false});},tool:true,note:'耐久 40，砍不倒樹'},
  {id:'axe2',icon:'axe',tid:'axe',st:'bench',name:'鐵斧',need:{wood:3,iron:1},make:()=>{tools.axe.push({kind:'鐵斧',dur:100,max:100,fell:true});},tool:true,note:'耐久 100，可以把樹砍倒'},
  {id:'pick',st:'bench',name:'簡易鎬',need:{branch:5,stone:1},make:()=>{tools.pick.push({kind:'簡易鎬',dur:40,max:40});},tool:true,note:'耐久 40'},
  {id:'f_chair',adv:true,st:'bench',name:'木椅',need:{wood:2},make:()=>{inv.f_chair=(inv.f_chair||0)+1;},furn:true},
