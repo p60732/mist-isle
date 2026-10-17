@@ -17,6 +17,7 @@
 }
 html,body{height:100%;margin:0;overflow:hidden;background:var(--sky);color:var(--ink);font-family:var(--f-ui);-webkit-user-select:none;user-select:none}
 #c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#act,#act2,#joy,#hotbar .slot{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .hud{position:fixed;z-index:2;pointer-events:none}
 .card{background:var(--paper);border-radius:16px;box-shadow:0 3px 0 var(--paper-edge);padding:8px 12px}
 #tl{top:calc(12px + env(safe-area-inset-top,0px));left:max(12px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:6px}
@@ -570,7 +571,7 @@ function questHTML(){const cur=dq.day===day;
     todayQuests().map(q=>{const p=Math.min(q.need,(cur&&dq.prog[q.id])||0);const got=!!(cur&&dq.claimed[q.id]);const done=p>=q.need;
       return '<div class="rec st-bench"><span class="tx"><span class="nm">'+q.name+'</span><span class="need">進度 '+p+' / '+q.need+'　獎勵：'+rewardText(q.reward)+'</span></span><button class="pbtn go" type="button" data-x="claim" data-q="'+q.id+'"'+(done&&!got?'':' disabled')+'>'+(got?'已領取':'領取')+'</button></div>';}).join('');}
 const seenN=()=>TRIAL_MATS.filter(k=>seen.has(k)).length;
-const NEED2=Math.ceil(TRIAL_MATS.length*0.5),NEED3=Math.ceil(TRIAL_MATS.length*0.8);
+const NEED2=8,NEED3=12;
 function tierNow(){const n=seenN();return (n>=NEED3&&purified)?3:(n>=NEED2?2:1);}
 function lockTier(t){const n=seenN(),T=TRIAL_MATS.length;
   if(t===2)return n>=NEED2?'':'研究進度不足：材料 '+n+' / '+T+'（需要 '+NEED2+' 種）';
@@ -720,8 +721,12 @@ addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key===' '||e.
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
 
 const actBtn=$('act');let ctx={a:'none'};
-actBtn.addEventListener('click',doAction);
-$('act2').addEventListener('click',()=>{const t=$('act2')._t;if(!t)return;const keep=ctx;ctx={a:'shake',t};doAction();ctx=keep;});
+// 用 pointerdown 觸發，手機同時按搖桿與互動時也能反應；鍵盤觸發（detail 0）保留 click
+const shakeNow=()=>{const t=$('act2')._t;if(!t)return;const keep=ctx;ctx={a:'shake',t};doAction();ctx=keep;};
+actBtn.addEventListener('pointerdown',e=>{e.preventDefault();doAction();});
+actBtn.addEventListener('click',e=>{if(e.detail===0)doAction();});
+$('act2').addEventListener('pointerdown',e=>{e.preventDefault();shakeNow();});
+$('act2').addEventListener('click',e=>{if(e.detail===0)shakeNow();});
 function doAction(){
   const a=ctx.a;
   if(a==='need'){toast(ctx.msg,2200);return;}
