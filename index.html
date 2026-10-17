@@ -65,7 +65,7 @@ body.laying #act2{display:none!important}
 #sheet h2{margin:0;font-size:20px}
 .shead{display:flex;justify-content:space-between;align-items:center}
 #sheet>.shead{position:sticky;top:-16px;z-index:2;background:#F6EBD6;margin:-16px -16px 6px -16px;padding:14px 16px 8px 16px}
-.pbtn{border:0;border-radius:14px;background:var(--paper);box-shadow:0 3px 0 var(--paper-edge);font:700 15px var(--f-ui);color:var(--ink);cursor:pointer;min-height:44px;padding:0 14px}
+.pbtn{white-space:nowrap;min-width:64px;border:0;border-radius:14px;background:var(--paper);box-shadow:0 3px 0 var(--paper-edge);font:700 15px var(--f-ui);color:var(--ink);cursor:pointer;min-height:44px;padding:0 14px}
 .pbtn.go{background:var(--amber);box-shadow:0 3px 0 var(--amber-deep);color:#fff}
 .pbtn[disabled]{background:#CFC6B5;box-shadow:none;color:#fff;cursor:default}
 .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
@@ -79,6 +79,17 @@ body.laying #act2{display:none!important}
 .rec .nm{font-weight:700;font-size:16px}.rec .need{font-size:12px;color:var(--ink-soft)}
 .ok{color:#2F6B2A;font-weight:700}.lack{color:#B4372B;font-weight:700}
 .note{font-size:12px;color:var(--ink-soft)}
+/* panel fields: framed slots with category tints */
+#sheet{border-top:4px solid #3F3A52}
+.sec{display:inline-block;margin:10px 0 2px;padding:3px 12px;border-radius:999px;font-weight:700;font-size:13px;color:#FFF8EC;background:#3F3A52}
+.sec.st-bench{background:#B8702A}.sec.st-caul{background:#3E7F78}.sec.st-loom{background:#6F5AA8}
+.rec{border:2px solid #E9D9BD;box-shadow:0 3px 0 var(--paper-edge),inset 0 0 0 3px #FFFDF6}
+.rec.st-bench{background:#FFF1DC;border-color:#EBC995}
+.rec.st-caul{background:#E9F5F2;border-color:#A9D5CD}
+.rec.st-loom{background:#F1EDFA;border-color:#C9BDE8}
+.rec.st-bench .ic{background:#F9DDB0}.rec.st-caul .ic{background:#CBE8E1}.rec.st-loom .ic{background:#DDD3F2}
+.rec .ic{border:2px solid rgba(59,42,30,.12)}
+.cell{box-shadow:0 3px 0 var(--paper-edge),inset 0 0 0 2px #FFFDF6;border:2px solid #E9D9BD}
 #lay{position:fixed;left:0;right:0;bottom:0;z-index:8;background:#F6EBD6;border-radius:24px 24px 0 0;box-shadow:0 -3px 0 var(--paper-edge);padding:12px max(14px,env(safe-area-inset-right,0px)) calc(14px + env(safe-area-inset-bottom,0px)) max(14px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:10px}
 #lay .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 #lay .mode.on{background:var(--amber);color:#fff;box-shadow:0 3px 0 var(--amber-deep)}
@@ -491,7 +502,7 @@ function renderPanel(){
       (selC&&selC.k==='mush'?'<button class="pbtn go" type="button" data-x="eat">吃一個（體力 +15）</button>':'')+
       '<div class="shead" style="margin-top:4px"><span class="note">畫面設定</span><button class="pbtn" type="button" data-x="curve">地平線彎曲：'+(curveOn?'開':'關')+'</button></div>';
   }else if(panelKind==='book'){
-    const rows=['bench','caul','loom'].map(st=>'<div class="note" style="font-weight:700;font-size:14px;color:var(--ink)">'+STNAME[st]+'</div>'+RECIPES.filter(r=>r.st===st&&(!r.when||r.id==='bagup')).map(r=>{const lk=typeof r.locked==='function'?r.locked():r.locked;const mats=Object.keys(r.need).every(k=>inv[k]>=r.need[k]);const here=canMakeAt(r);const can=!lk&&mats&&here;const why=lk?lk:!here?(r.adv?'需要走到'+STNAME[r.st]+'旁邊':'需要裝備時空戒指（換裝）'):!mats?'材料不足':'';const has=r.tool&&tools[r.tid||r.id]&&tools[r.tid||r.id].filter(x=>x.kind===r.name).length?' （已有 '+tools[r.tid||r.id].filter(x=>x.kind===r.name).length+' 把）':'';return '<div class="rec"'+(can?'':' style="opacity:.6"')+'><span class="ic">'+svg(r.icon||r.id,36)+'</span><span class="tx"><span class="nm">'+r.name+has+'</span><span class="need">'+Object.keys(r.need).map(k=>NAME[k]+' '+inv[k]+'/'+r.need[k]).join('、')+(why?'<span class="note">　'+why+'</span>':'')+'</span></span><button class="pbtn go" type="button" data-make="'+r.id+'"'+(can?'':' disabled')+'>'+(lk?'未解鎖':'製作')+'</button></div>';}).join('')).join('');
+    const rows=['bench','caul','loom'].map(st=>'<div class="sec st-'+st+'">'+STNAME[st]+'</div>'+RECIPES.filter(r=>r.st===st&&(!r.when||r.id==='bagup')).map(r=>{const lk=typeof r.locked==='function'?r.locked():r.locked;const mats=Object.keys(r.need).every(k=>inv[k]>=r.need[k]);const here=canMakeAt(r);const can=!lk&&mats&&here;const why=lk?lk:!here?(r.adv?'需要走到'+STNAME[r.st]+'旁邊':'需要裝備時空戒指（換裝）'):!mats?'材料不足':'';const has=r.tool&&tools[r.tid||r.id]&&tools[r.tid||r.id].filter(x=>x.kind===r.name).length?' （已有 '+tools[r.tid||r.id].filter(x=>x.kind===r.name).length+' 把）':'';return '<div class="rec st-'+r.st+'"'+(can?'':' style="opacity:.6"')+'><span class="ic">'+svg(r.icon||r.id,36)+'</span><span class="tx"><span class="nm">'+r.name+has+'</span><span class="need">'+Object.keys(r.need).map(k=>NAME[k]+' '+inv[k]+'/'+r.need[k]).join('、')+(why?'<span class="note">　'+why+'</span>':'')+'</span></span><button class="pbtn go" type="button" data-make="'+r.id+'"'+(can?'':' disabled')+'>'+(lk?'未解鎖':'製作')+'</button></div>';}).join('')).join('');
     sheet.innerHTML='<div class="shead"><h2>配方書</h2><button class="pbtn" type="button" data-x="close" aria-label="關閉配方書">關閉</button></div>'+rows+
       '<div class="note">'+(timeRing&&accEquipped==='ring'?'時空戒指已裝備，可以在島上製作基本道具。':'在島上製作基本道具，需要先裝備時空戒指（到換裝）。')+'家具與進階配方請走到工坊對應的工作台、大釜或織布機。</div>';
   }else if(panelKind==='dress'){
@@ -503,7 +514,7 @@ function renderPanel(){
       RECIPES.filter(r=>(craftSt==='ring'?!r.adv:r.st===craftSt)&&(!r.when||r.when())).map(r=>{const ok=Object.keys(r.need).every(k=>inv[k]>=r.need[k]);const tk=r.tid||r.id;const has=r.tool&&tools[tk]&&tools[tk].filter(x=>x.kind===r.name).length?{n:tools[tk].filter(x=>x.kind===r.name).length}:null;
         const need=Object.keys(r.need).map(k=>'<span class="'+(inv[k]>=r.need[k]?'ok':'lack')+'">'+NAME[k]+' '+inv[k]+'/'+r.need[k]+'</span>').join('、');
         const lk=typeof r.locked==='function'?r.locked():r.locked;if(lk)return '<div class="rec" style="opacity:.6"><span class="ic">'+svg(r.icon||r.id,36)+'</span><span class="tx"><span class="nm">'+r.name+'</span><span class="need">'+lk+'</span></span><button class="pbtn" type="button" disabled>未解鎖</button></div>';
-        return '<div class="rec"><span class="ic">'+svg(r.icon||r.id,36)+'</span><span class="tx"><span class="nm">'+r.name+(has?'（已有 '+has.n+' 把）':'')+(r.note?'<span class="note">　'+r.note+'</span>':'')+'</span><span class="need">'+need+'</span></span><button class="pbtn go" type="button" data-make="'+r.id+'"'+(ok?'':' disabled')+'>'+(has?'再做一把':'製作')+'</button></div>';}).join('')+
+        return '<div class="rec st-'+r.st+'"><span class="ic">'+svg(r.icon||r.id,36)+'</span><span class="tx"><span class="nm">'+r.name+(has?'（已有 '+has.n+' 把）':'')+(r.note?'<span class="note">　'+r.note+'</span>':'')+'</span><span class="need">'+need+'</span></span><button class="pbtn go" type="button" data-make="'+r.id+'"'+(ok?'':' disabled')+'>'+(has?'再做一把':'製作')+'</button></div>';}).join('')+
       '<div class="note">示範版按下就完成。正式版合成時會有火候、攪拌小遊戲，做得好品質更高。</div>';
   }
 }
