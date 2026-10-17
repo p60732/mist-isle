@@ -432,18 +432,18 @@ const RECIPES=[
  {id:'axe',st:'bench',name:'簡易斧',need:{branch:5,stone:1},make:()=>{tools.axe.push({kind:'簡易斧',dur:40,max:40,fell:false});},tool:true,note:'耐久 40，砍不倒樹'},
  {id:'axe2',icon:'axe',tid:'axe',st:'bench',name:'鐵斧',need:{wood:3,iron:1},make:()=>{tools.axe.push({kind:'鐵斧',dur:100,max:100,fell:true});},tool:true,note:'耐久 100，可以把樹砍倒'},
  {id:'pick',st:'bench',name:'簡易鎬',need:{branch:5,stone:1},make:()=>{tools.pick.push({kind:'簡易鎬',dur:40,max:40});},tool:true,note:'耐久 40'},
- {id:'f_chair',st:'bench',name:'木椅',need:{wood:2},make:()=>{inv.f_chair=(inv.f_chair||0)+1;},furn:true},
- {id:'f_table',st:'bench',name:'木桌',need:{wood:3},make:()=>{inv.f_table=(inv.f_table||0)+1;},furn:true},
- {id:'f_bed',st:'bench',name:'小木床',need:{wood:4,stone:1},make:()=>{inv.f_bed=(inv.f_bed||0)+1;},furn:true},
- {id:'f_plant',st:'bench',name:'盆栽',need:{clay:2,mush:1},make:()=>{inv.f_plant=(inv.f_plant||0)+1;},furn:true},
- {id:'f_chest',st:'bench',name:'收納箱',need:{wood:3,stone:1},make:()=>{inv.f_chest=(inv.f_chest||0)+1;},furn:true},
- {id:'potion',st:'caul',name:'淨霧藥劑',need:{mush:3,crys:1},make:()=>{inv.potion++;}},
+ {id:'f_chair',adv:true,st:'bench',name:'木椅',need:{wood:2},make:()=>{inv.f_chair=(inv.f_chair||0)+1;},furn:true},
+ {id:'f_table',adv:true,st:'bench',name:'木桌',need:{wood:3},make:()=>{inv.f_table=(inv.f_table||0)+1;},furn:true},
+ {id:'f_bed',adv:true,st:'bench',name:'小木床',need:{wood:4,stone:1},make:()=>{inv.f_bed=(inv.f_bed||0)+1;},furn:true},
+ {id:'f_plant',adv:true,st:'bench',name:'盆栽',need:{clay:2,mush:1},make:()=>{inv.f_plant=(inv.f_plant||0)+1;},furn:true},
+ {id:'f_chest',adv:true,st:'bench',name:'收納箱',need:{wood:3,stone:1},make:()=>{inv.f_chest=(inv.f_chest||0)+1;},furn:true},
+ {id:'potion',adv:true,st:'caul',name:'淨霧藥劑',need:{mush:3,crys:1},make:()=>{inv.potion++;}},
  {id:'stam',st:'caul',name:'體力藥水',need:{mush:2,wood:1},make:()=>{inv.stam=(inv.stam||0)+1;},note:'喝下回復 40 體力'},
- {id:'cloth',st:'loom',name:'粗麻布',need:{flax:3},make:()=>{inv.cloth=(inv.cloth||0)+1;},note:'做套裝和背包的布料',locked:()=>!purified?'需要麻草，淨化火苔之森後可以採集':''},
- {id:'bagup',icon:'bag',st:'loom',name:'背包擴充',need:{cloth:3},make:()=>{BAG_MAX=Math.min(40,BAG_MAX+10);},when:()=>BAG_MAX<40,note:'背包 +10 格（最多 40）',noItem:true}
+ {id:'cloth',adv:true,st:'loom',name:'粗麻布',need:{flax:3},make:()=>{inv.cloth=(inv.cloth||0)+1;},note:'做套裝和背包的布料',locked:()=>!purified?'需要麻草，淨化火苔之森後可以採集':''},
+ {id:'bagup',adv:true,icon:'bag',st:'loom',name:'背包擴充',need:{cloth:3},make:()=>{BAG_MAX=Math.min(40,BAG_MAX+10);},when:()=>BAG_MAX<40,note:'背包 +10 格（最多 40）',noItem:true}
 ];
-const STNAME={bench:'工作台',caul:'大釜',loom:'織布機'};
-let purified=false,purifyT=-1,curveOn=true,usedSlot='',usedT=0;
+const STNAME={bench:'工作台',caul:'大釜',loom:'織布機',ring:'時空戒指'};
+let purified=false,purifyT=-1,curveOn=true,usedSlot='',usedT=0,timeRing=false;
 function staUI(){$('staFill').style.width=stamina+'%';$('staFill').style.background=stamina<25?'#E0663F':'#6DBB58';}
 function hotbarUI(){
   const slots=[['axe',tools.axe.length?tools.axe:null],['pick',tools.pick.length?tools.pick:null],['potion',inv.potion],['mush',inv.mush],['stam',inv.stam||0]];
@@ -490,7 +490,7 @@ function renderPanel(){
       '<div class="note">要製作，請走到工坊裡對應的工作台、大釜或織布機。</div>';
   }else if(panelKind==='craft'){
     sheet.innerHTML='<div class="shead"><h2>'+STNAME[craftSt]+'</h2><button class="pbtn" type="button" data-x="close" aria-label="關閉">關閉</button></div>'+
-      RECIPES.filter(r=>r.st===craftSt&&(!r.when||r.when())).map(r=>{const ok=Object.keys(r.need).every(k=>inv[k]>=r.need[k]);const tk=r.tid||r.id;const has=r.tool&&tools[tk]&&tools[tk].filter(x=>x.kind===r.name).length?{n:tools[tk].filter(x=>x.kind===r.name).length}:null;
+      RECIPES.filter(r=>(craftSt==='ring'?!r.adv:r.st===craftSt)&&(!r.when||r.when())).map(r=>{const ok=Object.keys(r.need).every(k=>inv[k]>=r.need[k]);const tk=r.tid||r.id;const has=r.tool&&tools[tk]&&tools[tk].filter(x=>x.kind===r.name).length?{n:tools[tk].filter(x=>x.kind===r.name).length}:null;
         const need=Object.keys(r.need).map(k=>'<span class="'+(inv[k]>=r.need[k]?'ok':'lack')+'">'+NAME[k]+' '+inv[k]+'/'+r.need[k]+'</span>').join('、');
         const lk=typeof r.locked==='function'?r.locked():r.locked;if(lk)return '<div class="rec" style="opacity:.6"><span class="ic">'+svg(r.icon||r.id,36)+'</span><span class="tx"><span class="nm">'+r.name+'</span><span class="need">'+lk+'</span></span><button class="pbtn" type="button" disabled>未解鎖</button></div>';
         return '<div class="rec"><span class="ic">'+svg(r.icon||r.id,36)+'</span><span class="tx"><span class="nm">'+r.name+(has?'（已有 '+has.n+' 把）':'')+(r.note?'<span class="note">　'+r.note+'</span>':'')+'</span><span class="need">'+need+'</span></span><button class="pbtn go" type="button" data-make="'+r.id+'"'+(ok?'':' disabled')+'>'+(has?'再做一把':'製作')+'</button></div>';}).join('')+
@@ -505,7 +505,7 @@ sheet.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)retu
   else if(t.dataset.x==='curve'){curveOn=!curveOn;curveU.value=curveOn?CURVE:0;renderPanel();}
   else if(t.dataset.x==='eat'){if(stamina>=100){toast('體力已經是滿的。',1200);return;}inv.mush--;stamina=Math.min(100,stamina+15);staUI();hotbarUI();renderPanel();}
   else if(t.dataset.sel){bagSel=t.dataset.sel;renderPanel();}
-  else if(t.dataset.make){const r=RECIPES.find(x=>x.id===t.dataset.make);if(!r.when&&!r.noItem){const after=Object.assign({},inv);Object.keys(r.need).forEach(k=>after[k]-=r.need[k]);const keep=inv;inv=after;const ok=r.tool?fits({tool:1}):fits({k:r.id==='potion'?'potion':r.id==='stam'?'stam':r.id,n:1});inv=keep;if(!ok){toast(FULL,2200);return;}}Object.keys(r.need).forEach(k=>inv[k]-=r.need[k]);r.make();hotbarUI();renderPanel();toast('做好了：'+r.name+'！',1400);}
+  else if(t.dataset.make){const r=RECIPES.find(x=>x.id===t.dataset.make);if(!r.when&&!r.noItem){const after=Object.assign({},inv);Object.keys(r.need).forEach(k=>after[k]-=r.need[k]);const keep=inv;inv=after;const ok=r.tool?fits({tool:1}):fits({k:r.id==='potion'?'potion':r.id==='stam'?'stam':r.id,n:1});inv=keep;if(!ok){toast(FULL,2200);return;}}Object.keys(r.need).forEach(k=>inv[k]-=r.need[k]);r.make();hotbarUI();renderPanel();toast('做好了：'+r.name+'！',1400);if(!timeRing){timeRing=true;setTimeout(()=>toast('獲得時空戒指！之後可以在島上任何地方製作基本道具。',3200),1500);}}
 });
 let sitting=null;
 function face(x,z){player.rotation.y=Math.atan2(x-player.position.x,z-player.position.z);}
@@ -532,6 +532,7 @@ function doAction(){
   const a=ctx.a;
   if(a==='need'){toast(ctx.msg,2200);return;}
   if(a==='station'){const st=STATIONS.find(o=>o.id===ctx.s);face(st.x,st.z);craftSt=ctx.s;openPanel('craft');return;}
+  if(a==='craft'){craftSt='ring';openPanel('craft');return;}
   if(a==='node'){const n=ctx.n;const k=n.kind;if(!fits({k,n:1})){toast(FULL,2000);return;}face(n.x,n.z);n.taken=true;inv[k]=(inv[k]||0)+1;hotbarUI();toast({moon:'採到月光蘑菇！只有夜裡才找得到。',dew:'收集到晨露！太陽升高就會蒸發。',flax:'採到麻草，可以拿去織布機織布。'}[k],1800);return;}
   if(a==='sleep'){face(ctx.x,ctx.z);openPanel('sleep');return;}
   if(a==='chest'){face(ctx.x,ctx.z);openPanel('chest');return;}
@@ -815,6 +816,7 @@ function frame(now){
   else{const st=STATIONS.find(o=>Math.hypot(o.x-p.x,o.z-p.z)-o.r<1.6);
     if(st)ctx={a:'station',s:st.id,label:st.name};
     else if(Math.hypot(p.x,p.z+13)<6)ctx={a:'tree',label:'觀察'};
+    else if(timeRing)ctx={a:'craft',label:'製作'};
     else ctx={a:'none',label:'互動'};}
   }
   if(actBtn.dataset.a!==ctx.a||actBtn.textContent!==ctx.label){actBtn.dataset.a=ctx.a;actBtn.textContent=ctx.label;}
