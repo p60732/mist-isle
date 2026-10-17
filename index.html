@@ -64,6 +64,7 @@ body.laying #act2{display:none!important}
 #sheet{width:min(100%,520px);max-height:78%;overflow:auto;background:#F6EBD6;border-radius:26px 26px 0 0;padding:16px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));box-sizing:border-box;display:flex;flex-direction:column;gap:12px}
 #sheet h2{margin:0;font-size:20px}
 .shead{display:flex;justify-content:space-between;align-items:center}
+#sheet>.shead{position:sticky;top:0;z-index:2;background:#F6EBD6;margin:-16px -16px 6px -16px;padding:14px 16px 8px 16px}
 .pbtn{border:0;border-radius:14px;background:var(--paper);box-shadow:0 3px 0 var(--paper-edge);font:700 15px var(--f-ui);color:var(--ink);cursor:pointer;min-height:44px;padding:0 14px}
 .pbtn.go{background:var(--amber);box-shadow:0 3px 0 var(--amber-deep);color:#fff}
 .pbtn[disabled]{background:#CFC6B5;box-shadow:none;color:#fff;cursor:default}
