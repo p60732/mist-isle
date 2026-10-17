@@ -57,7 +57,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--sky);color:var(-
   <div class="card"><div class="t1" id="clock">春季 · 第 1 天 · 07:00</div><div class="t2" id="region">燈芯島 · 小谷村</div></div>
 </div>
 <div class="hud" id="tr">
-  <div class="card chip"><span class="dot" style="background:#E8584A"></span><span id="mushN">紅帽蘑菇 0</span></div>
+  <div class="card" id="inv" style="display:grid;grid-template-columns:auto auto;gap:2px 12px;font-size:13px;font-weight:700;padding:8px 12px"><span id="iMush">蘑菇 0</span><span id="iWood">木材 0</span><span id="iStone">石頭 0</span><span id="iCrys">水晶 0</span></div>
   <div class="card chip"><span class="dot" style="background:#9B7BD4"></span><span id="potN">淨霧藥劑 1</span></div>
   <button class="card toggle" id="curveBtn" type="button">地平線彎曲：開</button>
 </div>
@@ -150,12 +150,15 @@ for(let i=0;i<14;i++){
 
 // trees
 const coneG1=new THREE.ConeGeometry(1.7,3,7),coneG2=new THREE.ConeGeometry(1.25,2.4,7),trunkG=new THREE.CylinderGeometry(0.28,0.38,1.6,6);
+const trees=[];
+function ownMat(base,forest){const m=bend(base.clone());m.transparent=false;if(forest){const L=lerps.find(l=>l.m===base);lerps.push({m,a:L.a,b:L.b});}return m;}
 function tree(x,z,forest){
   const g=new THREE.Group();g.position.set(x,0,z);const s=0.8+rnd()*0.6;g.scale.setScalar(s);g.rotation.y=rnd()*6;
-  part(trunkG,forest?fTrunk:toon(0x8A5A36),0,0.8,0,g,0.12);
-  part(coneG1,forest?fLeaf:toon(0x4E9E4A),0,2.8,0,g,0.07);
-  part(coneG2,forest?fLeaf2:toon(0x5DAE55),0,4.1,0,g,0.08);
-  scene.add(g);colliders.push({x,z,r:0.75*s});treeDots.push({x,z,f:forest});
+  const mT=ownMat(forest?fTrunk:toon(0x8A5A36),forest),m1=ownMat(forest?fLeaf:toon(0x4E9E4A),forest),m2=ownMat(forest?fLeaf2:toon(0x5DAE55),forest);
+  const trunk=part(trunkG,mT,0,0.8,0,g,0.12),c1=part(coneG1,m1,0,2.8,0,g,0.07),c2=part(coneG2,m2,0,4.1,0,g,0.08);
+  const col={x,z,r:0.75*s};
+  scene.add(g);colliders.push(col);treeDots.push({x,z,f:forest});
+  trees.push({g,x,z,s,forest,trunk,crown:[c1,c2],mats:[mT,m1,m2],outlines:[trunk,c1,c2].map(m=>m.children[0]),alpha:1,hits:0,state:'up',t:0,col,rotY:g.rotation.y});
 }
 let placed=0;
 while(placed<64){
@@ -168,8 +171,9 @@ while(placed<64){
 for(let i=0;i<22;i++){const x=(rnd()-0.5)*80,z=-24-rnd()*34;if(Math.hypot(x,z)>R-4)continue;tree(x,z,true);}
 
 // rocks
+const rocks=[];
 const rockG=new THREE.DodecahedronGeometry(1,0);
-for(let i=0;i<16;i++){const a=rnd()*Math.PI*2,r=14+rnd()*44;const x=Math.cos(a)*r,z=Math.sin(a)*r;const m=part(rockG,toon(0xA9A39A),x,0.4,z,null,0.08);const sx=0.8+rnd(),sz=0.8+rnd();m.scale.set(sx,0.6+rnd()*0.6,sz);colliders.push({x,z,r:Math.max(sx,sz)*0.95});m.rotation.set(rnd(),rnd()*6,rnd());}
+for(let i=0;i<16;i++){const a=rnd()*Math.PI*2,r=14+rnd()*44;const x=Math.cos(a)*r,z=Math.sin(a)*r;const rm=bend(toon(0xA9A39A).clone());const m=part(rockG,rm,x,0.4,z,null,0.08);const sx=0.8+rnd(),sy=0.6+rnd()*0.6,sz=0.8+rnd();m.scale.set(sx,sy,sz);colliders.push({x,z,r:Math.max(sx,sz)*0.95});m.rotation.set(rnd(),rnd()*6,rnd());rocks.push({m,x,z,sc:[sx,sy,sz],r:Math.max(sx,sz),hits:0,state:'full',t:0,mat:rm});}
 
 // workshop house + cauldron
 const house=new THREE.Group();house.position.set(9,0,4);house.rotation.y=-0.5;scene.add(house);
@@ -263,7 +267,8 @@ ring.rotation.x=-Math.PI/2;ring.position.y=0.2;scene.add(ring);
 const $=id=>document.getElementById(id);
 const toastEl=$('toast');let toastT=0;
 function toast(msg,ms){toastEl.textContent=msg;toastEl.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>toastEl.classList.remove('on'),ms||2800);}
-let mushN=0,potN=1,purified=false,purifyT=-1,curveOn=true;
+let inv={mush:0,wood:0,stone:0,crys:0};function invUI(){$('iMush').textContent='蘑菇 '+inv.mush;$('iWood').textContent='木材 '+inv.wood;$('iStone').textContent='石頭 '+inv.stone;$('iCrys').textContent='水晶 '+inv.crys;}
+let potN=1,purified=false,purifyT=-1,curveOn=true;
 $('curveBtn').addEventListener('click',()=>{curveOn=!curveOn;curveU.value=curveOn?CURVE:0;$('curveBtn').textContent='地平線彎曲：'+(curveOn?'開':'關');});
 setTimeout(()=>{$('help').style.opacity=0;},7000);
 
@@ -282,7 +287,9 @@ const actBtn=$('act');let ctx={a:'none'};
 actBtn.addEventListener('click',doAction);
 function doAction(){
   const a=ctx.a;
-  if(a==='pick'){const m=ctx.m;m.alive=false;scene.remove(m.g);mushN++;$('mushN').textContent='紅帽蘑菇 '+mushN;toast('採到紅帽蘑菇！明天早上會再長出來。',1800);}
+  if(a==='pick'){const m=ctx.m;m.alive=false;scene.remove(m.g);inv.mush++;invUI();toast('採到紅帽蘑菇！明天早上會再長出來。',1800);}
+  else if(a==='chop'){const t=ctx.t;t.hits++;t.t=0.32;if(t.hits>=3){t.state='falling';t.t=0;inv.wood+=3;invUI();toast('砍倒了！木材 +3。樹樁明天會再長成樹。',1800);}else{toast('咚！再砍 '+(3-t.hits)+' 下。',900);}}
+  else if(a==='mine'){const r=ctx.r;r.hits++;r.t=0.25;inv.stone++;let msg='石頭 +1';if(Math.random()<0.25){inv.crys++;msg+='，還敲出了藍水晶！';}if(r.hits>=3){r.state='empty';msg+=' 這塊石頭今天敲不出東西了。';}invUI();toast(msg,1600);}
   else if(a==='purify'){potN--;$('potN').textContent='淨霧藥劑 '+potN;purifyT=0;ring.position.set(player.position.x,0.2,player.position.z);toast('把淨霧藥劑灑向灰霧……',2200);}
   else if(a==='tree'){toast('燈芯樹微微發著光。啾燈：「這是大媽媽，整座島的心臟喔！」',3600);}
   else if(a==='spirit'){toast('火苔精：「呼啊……睡了好久。你身上有大媽媽的光呢。」',3800);}
@@ -411,6 +418,23 @@ function frame(now){
   }
   if(purified){spirit.position.y=Math.abs(Math.sin(t*3))*0.35;spirit.rotation.y=Math.sin(t)*0.4;}
 
+  // trees: occlusion fade + chop animation
+  trees.forEach(t=>{
+    const dz=t.z-p.z,dx=Math.abs(t.x-p.x);
+    const occl=t.state==='up'&&dz>-0.5&&dz<7&&dx<2.3*t.s;
+    const target=occl?0.28:1;t.alpha+=(target-t.alpha)*Math.min(1,dt*8);
+    const fading=t.alpha<0.97;
+    t.mats.forEach(m=>{if(m.transparent!==fading){m.transparent=fading;m.depthWrite=!fading;m.needsUpdate=true;}m.opacity=fading?t.alpha:1;});
+    t.outlines.forEach(o=>{o.visible=!fading;});
+    if(t.state==='up'){if(t.t>0){t.t-=dt;t.g.rotation.z=Math.sin(t.t*60)*0.06*(t.t/0.32);}else t.g.rotation.z=0;}
+    else if(t.state==='falling'){t.t+=dt;const k=Math.min(1,t.t/0.7);t.g.rotation.z=k*k*1.45;if(k>=1){t.state='stump';t.t=0;t.g.rotation.z=0;t.crown.forEach(c=>c.visible=false);t.trunk.scale.y=0.35;t.trunk.position.y=0.28;t.col.r=0.42*t.s;}}
+    else if(t.state==='stump'){t.t+=dt;if(t.t>45){t.state='up';t.hits=0;t.crown.forEach(c=>{c.visible=true;});t.trunk.scale.y=1;t.trunk.position.y=0.8;t.col.r=0.75*t.s;}}
+  });
+  rocks.forEach(r=>{
+    if(r.t>0){r.t-=dt;const k=r.t/0.25;r.m.position.x=r.x+Math.sin(r.t*90)*0.08*k;}else r.m.position.x=r.x;
+    if(r.state==='empty'){r.m.scale.set(r.sc[0]*0.6,r.sc[1]*0.5,r.sc[2]*0.6);r.mat.color.setHex(0x8C877F);r.regrow=(r.regrow||0)+dt;if(r.regrow>45){r.state='full';r.hits=0;r.regrow=0;r.m.scale.set(r.sc[0],r.sc[1],r.sc[2]);r.mat.color.setHex(0xA9A39A);}}
+  });
+
   // region label
   let reg='燈芯島 · 小谷村';
   if(p.z<-17)reg=purified?'火苔之森':'火苔之森（灰霧）';
@@ -420,7 +444,11 @@ function frame(now){
 
   // context action
   let best=null,bd=2.4;mushes.forEach(m=>{if(!m.alive)return;const d=Math.hypot(m.x-p.x,m.z-p.z);if(d<bd){bd=d;best=m;}});
+  let bt=null,btd=1e9;trees.forEach(t=>{if(t.state!=='up'||(t.forest&&!purified))return;const d=Math.hypot(t.x-p.x,t.z-p.z)-t.col.r;if(d<1.3&&d<btd){btd=d;bt=t;}});
+  let br=null,brd=1e9;rocks.forEach(r=>{if(r.state!=='full')return;const d=Math.hypot(r.x-p.x,r.z-p.z)-r.r;if(d<1.3&&d<brd){brd=d;br=r;}});
   if(best)ctx={a:'pick',m:best,label:'採集'};
+  else if(br&&(!bt||brd<btd))ctx={a:'mine',r:br,label:'敲石頭'};
+  else if(bt)ctx={a:'chop',t:bt,label:'砍樹'};
   else if(!purified&&purifyT<0&&p.z<-17&&potN>0)ctx={a:'purify',label:'淨霧'};
   else if(purified&&Math.hypot(p.x-spirit.position.x,p.z-spirit.position.z)<4)ctx={a:'spirit',label:'對話'};
   else if(Math.hypot(p.x,p.z+13)<6)ctx={a:'tree',label:'觀察'};
