@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>燈芯島 3D 地圖試玩</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chiron+GoRound+TC:wght@400;700&display=swap">
+<style>
+/* Layout: full-screen 3D canvas; HUD pinned to corners inside safe areas. Single deliberate daytime look. */
+:root{
+  --ink:#3B2A1E; --ink-soft:#6F5A46; --paper:#FFF8EC; --paper-edge:#E3D3B6;
+  --amber:#F29E4C; --amber-deep:#C8762E; --sky:#CDEBF5; --mist:#5E6372;
+  --f-ui:"Chiron GoRound TC","PingFang TC","Noto Sans TC",system-ui,sans-serif;
+}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--sky);color:var(--ink);font-family:var(--f-ui);-webkit-user-select:none;user-select:none}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.hud{position:fixed;z-index:2;pointer-events:none}
+.card{background:var(--paper);border-radius:16px;box-shadow:0 3px 0 var(--paper-edge);padding:8px 12px}
+#tl{top:calc(12px + env(safe-area-inset-top,0px));left:max(12px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:6px}
+#tl .t1{font-size:12px;color:var(--ink-soft)}
+#tl .t2{font-size:17px;font-weight:700}
+#tr{top:calc(12px + env(safe-area-inset-top,0px));right:max(12px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.chip{display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px;padding:6px 12px 6px 8px;border-radius:999px}
+.dot{width:14px;height:14px;border-radius:50%}
+.toggle{pointer-events:auto;border:0;font:inherit;font-size:12px;color:var(--ink);cursor:pointer}
+.toggle:focus-visible,#act:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+#toast{left:50%;top:calc(96px + env(safe-area-inset-top,0px));transform:translate(-50%,-8px);max-width:min(86vw,420px);font-size:15px;line-height:1.55;text-align:center;opacity:0;transition:opacity .3s,transform .3s}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+#joy{position:fixed;z-index:3;left:max(24px,calc(env(safe-area-inset-left,0px) + 12px));bottom:calc(28px + env(safe-area-inset-bottom,0px));width:120px;height:120px;border-radius:50%;background:rgba(255,248,236,.45);border:3px solid rgba(255,248,236,.9);touch-action:none}
+#knob{position:absolute;left:36px;top:36px;width:48px;height:48px;border-radius:50%;background:var(--paper);box-shadow:0 3px 0 var(--paper-edge)}
+#act{position:fixed;z-index:3;right:max(28px,calc(env(safe-area-inset-right,0px) + 16px));bottom:calc(40px + env(safe-area-inset-bottom,0px));width:96px;height:96px;border-radius:50%;border:0;background:var(--amber);box-shadow:0 5px 0 var(--amber-deep);color:#fff;font:700 19px var(--f-ui);cursor:pointer;touch-action:manipulation}
+#act[data-a="none"]{background:#B9AE9C;box-shadow:0 5px 0 #8E846F}
+#act[data-a="purify"]{background:#7E5FC4;box-shadow:0 5px 0 #5A4196}
+#help{left:50%;bottom:calc(150px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);font-size:13px;color:var(--ink);background:rgba(255,248,236,.85);border-radius:999px;padding:6px 14px;white-space:nowrap;transition:opacity .6s}
+@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+</style>
+</head>
+<body>
+
+
+<canvas id="c" aria-label="燈芯島 3D 場景"></canvas>
+
+<div class="hud" id="tl">
+  <div class="card"><div class="t1" id="clock">春季 · 第 1 天 · 07:00</div><div class="t2" id="region">燈芯島 · 小谷村</div></div>
+</div>
+<div class="hud" id="tr">
+  <div class="card chip"><span class="dot" style="background:#E8584A"></span><span id="mushN">紅帽蘑菇 0</span></div>
+  <div class="card chip"><span class="dot" style="background:#9B7BD4"></span><span id="potN">淨霧藥劑 1</span></div>
+  <button class="card toggle" id="curveBtn" type="button">地平線彎曲：開</button>
+</div>
+<div class="hud card" id="toast" role="status" aria-live="polite"></div>
+<div class="hud" id="help">拖曳左下搖桿移動 · 電腦可用 WASD 或方向鍵</div>
+<div id="joy" aria-label="移動搖桿" role="application"><div id="knob"></div></div>
+<button id="act" type="button" data-a="none">互動</button>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+const canvas=document.getElementById('c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+const scene=new THREE.Scene();
+const SKY=0xCDEBF5;
+scene.background=new THREE.Color(SKY);
+scene.fog=new THREE.Fog(SKY,95,200);
+const camera=new THREE.PerspectiveCamera(42,1,0.1,400);
+
+scene.add(new THREE.HemisphereLight(0xffffff,0x9fbf88,0.65));
+const sun=new THREE.DirectionalLight(0xffffff,0.75);sun.position.set(12,24,10);scene.add(sun);
+
+// curved-world bend shared by every material
+const CURVE=0.006;const curveU={value:CURVE};const colliders=[];
+function bend(m){
+  m.onBeforeCompile=function(sh){
+    sh.uniforms.uCurve=curveU;
+    sh.vertexShader='uniform float uCurve;\n'+sh.vertexShader.replace('#include <project_vertex>',
+      'vec4 mvPosition = modelViewMatrix * vec4( transformed, 1.0 );\n'+
+      'float dz = max(0.0, -mvPosition.z - 14.0);\n'+
+      'mvPosition.y -= uCurve * dz * dz;\n'+
+      'gl_Position = projectionMatrix * mvPosition;');
+  };
+  return m;
+}
+const grad=new THREE.DataTexture(new Uint8Array([105,105,105,255,185,185,185,255,255,255,255,255]),3,1,THREE.RGBAFormat);
+grad.minFilter=grad.magFilter=THREE.NearestFilter;grad.generateMipmaps=false;grad.needsUpdate=true;
+const matCache={};
+function toon(c,own){
+  if(!own&&matCache[c])return matCache[c];
+  const m=bend(new THREE.MeshToonMaterial({color:c,gradientMap:grad}));
+  if(!own)matCache[c]=m;return m;
+}
+const outlineMat=bend(new THREE.MeshBasicMaterial({color:0x3B2A1E,side:THREE.BackSide}));
+function part(geo,mat,x,y,z,parent,ol){
+  const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);
+  if(ol!==0){const o=new THREE.Mesh(geo,outlineMat);o.scale.setScalar(1+(ol||0.07));m.add(o);}
+  (parent||scene).add(m);return m;
+}
+
+// seeded rng
+let seed=20261016;
+function rnd(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}
+
+// water + island
+const water=new THREE.Mesh(new THREE.PlaneGeometry(700,700,1,1),bend(new THREE.MeshToonMaterial({color:0x6EC3DE,gradientMap:grad})));
+water.rotation.x=-Math.PI/2;water.position.y=-1.1;scene.add(water);
+const R=62;
+part(new THREE.CylinderGeometry(R+5,R+7,2.4,56),toon(0xF1DCA4),0,-1.3,0,null,0.015);
+part(new THREE.CylinderGeometry(R,R+1.5,2,56),toon(0x8FCB6B),0,-0.99,0,null,0.012);
+
+// region tests
+const inForest=(x,z)=>z<-21;
+const inCoast=(x,z)=>x>28&&z>-21;
+
+// animatable forest materials
+const lerps=[];
+function fadeMat(fromHex,toHex){const m=toon(fromHex,true);lerps.push({m,a:new THREE.Color(fromHex),b:new THREE.Color(toHex)});return m;}
+const fLeaf=fadeMat(0x8C918F,0x3F8A3F),fLeaf2=fadeMat(0x9AA09C,0x5DAE55),fTrunk=fadeMat(0x6E6A68,0x8A5A36),fFloor=fadeMat(0x7D8380,0x6FB352),fStatue=fadeMat(0x9A9690,0xE0663F);
+
+// forest floor patches
+for(let i=0;i<14;i++){
+  const a=-Math.PI*0.5+(rnd()-0.5)*2.2, r=30+rnd()*24;
+  const x=Math.cos(a)*r, z=Math.sin(a)*r; if(!inForest(x,z))continue;
+  const d=new THREE.Mesh(new THREE.CircleGeometry(9+rnd()*6,18),fFloor);d.rotation.x=-Math.PI/2;d.position.set(x,0.03+i*0.002,z);scene.add(d);
+}
+
+// trees
+const coneG1=new THREE.ConeGeometry(1.7,3,7),coneG2=new THREE.ConeGeometry(1.25,2.4,7),trunkG=new THREE.CylinderGeometry(0.28,0.38,1.6,6);
+function tree(x,z,forest){
+  const g=new THREE.Group();g.position.set(x,0,z);const s=0.8+rnd()*0.6;g.scale.setScalar(s);g.rotation.y=rnd()*6;
+  part(trunkG,forest?fTrunk:toon(0x8A5A36),0,0.8,0,g,0.12);
+  part(coneG1,forest?fLeaf:toon(0x4E9E4A),0,2.8,0,g,0.07);
+  part(coneG2,forest?fLeaf2:toon(0x5DAE55),0,4.1,0,g,0.08);
+  scene.add(g);colliders.push({x,z,r:0.75*s});
+}
+let placed=0;
+while(placed<64){
+  const a=rnd()*Math.PI*2, r=18+rnd()*41; const x=Math.cos(a)*r, z=Math.sin(a)*r;
+  if(Math.hypot(x-9,z-4)<8||Math.hypot(x,z+13)<8)continue;
+  if(inCoast(x,z)&&rnd()<0.6)continue;
+  tree(x,z,inForest(x,z));placed++;
+}
+// extra forest density
+for(let i=0;i<22;i++){const x=(rnd()-0.5)*80,z=-24-rnd()*34;if(Math.hypot(x,z)>R-4)continue;tree(x,z,true);}
+
+// rocks
+const rockG=new THREE.DodecahedronGeometry(1,0);
+for(let i=0;i<16;i++){const a=rnd()*Math.PI*2,r=14+rnd()*44;const x=Math.cos(a)*r,z=Math.sin(a)*r;const m=part(rockG,toon(0xA9A39A),x,0.4,z,null,0.08);const sx=0.8+rnd(),sz=0.8+rnd();m.scale.set(sx,0.6+rnd()*0.6,sz);colliders.push({x,z,r:Math.max(sx,sz)*0.95});m.rotation.set(rnd(),rnd()*6,rnd());}
+
+// workshop house + cauldron
+const house=new THREE.Group();house.position.set(9,0,4);house.rotation.y=-0.5;scene.add(house);
+part(new THREE.BoxGeometry(5,3.2,4.2),toon(0xF3E3C3),0,1.6,0,house,0.04);
+const roof=part(new THREE.ConeGeometry(4.3,2.6,4),toon(0xD9694F),0,4.5,0,house,0.05);roof.rotation.y=Math.PI/4;
+part(new THREE.BoxGeometry(1.1,1.9,0.2),toon(0x8A5A36),0,0.95,2.15,house,0.06);
+part(new THREE.BoxGeometry(0.9,0.9,0.2),toon(0x9FD6EC),1.6,2.1,2.15,house,0.08);
+const caul=new THREE.Group();caul.position.set(4.2,0,7.5);scene.add(caul);colliders.push({x:4.2,z:7.5,r:1.0});
+part(new THREE.SphereGeometry(0.9,12,10),toon(0x4A4458),0,0.8,0,caul,0.08);
+const brew=new THREE.Mesh(new THREE.CircleGeometry(0.72,16),bend(new THREE.MeshBasicMaterial({color:0xB9A3E6})));brew.rotation.x=-Math.PI/2;brew.position.y=1.42;caul.add(brew);
+
+// lantern tree
+const lt=new THREE.Group();lt.position.set(0,0,-13);scene.add(lt);colliders.push({x:0,z:-13,r:1.5});
+part(new THREE.CylinderGeometry(0.9,1.4,6,8),toon(0x7A5236),0,3,0,lt,0.06);
+part(new THREE.IcosahedronGeometry(3.6,0),toon(0x7FBF5A),0,7.2,0,lt,0.05);
+part(new THREE.IcosahedronGeometry(2.4,0),toon(0x9ED67A),1.8,8.6,0.6,lt,0.06);
+const glowMat=bend(new THREE.MeshBasicMaterial({color:0xFFE08A,transparent:true,opacity:0.9}));
+const lanterns=[];
+for(let i=0;i<7;i++){const a=i/7*Math.PI*2;const m=new THREE.Mesh(new THREE.SphereGeometry(0.32,10,8),glowMat);m.position.set(Math.cos(a)*3.3,6+Math.sin(i*1.7)*1.2,Math.sin(a)*3.3);lt.add(m);lanterns.push(m);}
+
+// flowers
+const fG=new THREE.SphereGeometry(0.18,6,5);
+for(let i=0;i<60;i++){const a=rnd()*Math.PI*2,r=4+rnd()*18;const x=Math.cos(a)*r,z=Math.sin(a)*r;if(inForest(x,z))continue;const m=new THREE.Mesh(fG,toon([0xF4A6C0,0xF7D154,0xFFFFFF][i%3]));m.position.set(x,0.18,z);scene.add(m);}
+
+// pier
+for(let i=0;i<7;i++)part(new THREE.BoxGeometry(3,0.3,1.4),toon(0xB07A4A),0,-0.25,R-1+i*1.6,null,0.05);
+
+// spirit statue in forest
+const spirit=new THREE.Group();spirit.position.set(2,0,-36);scene.add(spirit);colliders.push({x:2,z:-36,r:1.7});
+part(new THREE.SphereGeometry(1.1,12,10),fStatue,0,1.1,0,spirit,0.07);
+const earL=part(new THREE.ConeGeometry(0.35,1.1,6),fStatue,-0.55,2.2,0,spirit,0.1);earL.rotation.z=0.4;
+const earR=part(new THREE.ConeGeometry(0.35,1.1,6),fStatue,0.55,2.2,0,spirit,0.1);earR.rotation.z=-0.4;
+part(new THREE.CylinderGeometry(1.4,1.6,0.5,10),toon(0x8F8A84),0,0.25,0,spirit,0.05).position.y=-0.0;
+
+// mist: soft camera-facing sprites, grey-violet so it reads apart from the blue distance haze
+function bendSprite(m){
+  m.onBeforeCompile=function(sh){
+    sh.uniforms.uCurve=curveU;
+    sh.vertexShader='uniform float uCurve;\n'+sh.vertexShader.replace('gl_Position = projectionMatrix * mvPosition;',
+      'float dz = max(0.0, -mvPosition.z - 14.0);\nmvPosition.y -= uCurve * dz * dz;\ngl_Position = projectionMatrix * mvPosition;');
+  };return m;
+}
+const puffTex=(function(){const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');
+  const r=g.createRadialGradient(64,64,4,64,64,62);r.addColorStop(0,'rgba(255,255,255,0.95)');r.addColorStop(0.45,'rgba(255,255,255,0.55)');r.addColorStop(1,'rgba(255,255,255,0)');
+  g.fillStyle=r;g.fillRect(0,0,128,128);const t=new THREE.CanvasTexture(c);return t;})();
+function mistSet(test,count,color){
+  const mat=bendSprite(new THREE.SpriteMaterial({map:puffTex,color,transparent:true,opacity:0.8,depthWrite:false,fog:false}));
+  const arr=[];let n=0,guard=0;
+  while(n<count&&guard++<8000){
+    const x=(rnd()-0.5)*2*R,z=(rnd()-0.5)*2*R;
+    if(Math.hypot(x,z)>R+3||!test(x,z))continue;
+    const m=new THREE.Sprite(mat);const s=7+rnd()*9;m.scale.set(s*1.5,s,1);m.position.set(x,1+rnd()*4.5,z);m.userData={bx:x,bz:z,ph:rnd()*6,s};scene.add(m);arr.push(m);n++;
+  }
+  return {mat,arr};
+}
+const forestMist=mistSet(inForest,150,0x9E9AB0);
+const coastMist=mistSet(inCoast,80,0x9A97AB);
+
+// mushrooms
+const mushes=[];
+const capG=new THREE.SphereGeometry(0.5,10,6,0,Math.PI*2,0,Math.PI/2),stemG=new THREE.CylinderGeometry(0.18,0.22,0.45,8);
+for(let i=0;i<12;i++){
+  let x,z;do{const a=rnd()*Math.PI*2,r=6+rnd()*22;x=Math.cos(a)*r;z=Math.sin(a)*r;}while(inForest(x,z)||Math.hypot(x-9,z-4)<5||Math.hypot(x,z+13)<5);
+  const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);
+  part(stemG,toon(0xF6EAD2),0,0.22,0,g,0.15);part(capG,toon(0xE8584A),0,0.42,0,g,0.1);
+  mushes.push({g,x,z,alive:true});
+}
+
+// player
+const player=new THREE.Group();player.position.set(-3,0,20);scene.add(player);
+const body=new THREE.Group();player.add(body);
+part(new THREE.CylinderGeometry(0.42,0.85,1.3,10),toon(0x2F7F86),0,0.75,0,body,0.07);
+part(new THREE.CylinderGeometry(0.44,0.44,0.18,10),toon(0xF29E4C),0,0.55,0,body,0.05);
+part(new THREE.SphereGeometry(0.55,14,12),toon(0xF6D7B8),0,1.85,0,body,0.07);
+const hair=part(new THREE.SphereGeometry(0.6,14,10,0,Math.PI*2,0,Math.PI*0.55),toon(0x6B3F26),0,1.92,-0.04,body,0.06);hair.rotation.x=-0.25;
+const eyeG=new THREE.SphereGeometry(0.07,6,5),eyeM=new THREE.MeshBasicMaterial({color:0x3B2A1E});bend(eyeM);
+[-0.2,0.2].forEach(x=>{const e=new THREE.Mesh(eyeG,eyeM);e.position.set(x,1.86,0.5);body.add(e);});
+const shadow=new THREE.Mesh(new THREE.CircleGeometry(0.8,16),bend(new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.18,depthWrite:false})));shadow.rotation.x=-Math.PI/2;shadow.position.y=0.04;player.add(shadow);
+
+// lantern moth
+const moth=new THREE.Group();scene.add(moth);
+moth.add(new THREE.Mesh(new THREE.SphereGeometry(0.16,10,8),bend(new THREE.MeshBasicMaterial({color:0xFFE9A0}))));
+const wingM=bend(new THREE.MeshBasicMaterial({color:0xF7C26B,side:THREE.DoubleSide,transparent:true,opacity:0.9}));
+const wL=new THREE.Mesh(new THREE.CircleGeometry(0.28,10),wingM),wR=wL.clone();wL.position.x=-0.24;wR.position.x=0.24;moth.add(wL,wR);
+
+// purify ring
+const ring=new THREE.Mesh(new THREE.RingGeometry(0.9,1.3,40),bend(new THREE.MeshBasicMaterial({color:0xE9DBFF,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false})));
+ring.rotation.x=-Math.PI/2;ring.position.y=0.2;scene.add(ring);
+
+// ---- UI ----
+const $=id=>document.getElementById(id);
+const toastEl=$('toast');let toastT=0;
+function toast(msg,ms){toastEl.textContent=msg;toastEl.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>toastEl.classList.remove('on'),ms||2800);}
+let mushN=0,potN=1,purified=false,purifyT=-1,curveOn=true;
+$('curveBtn').addEventListener('click',()=>{curveOn=!curveOn;curveU.value=curveOn?CURVE:0;$('curveBtn').textContent='地平線彎曲：'+(curveOn?'開':'關');});
+setTimeout(()=>{$('help').style.opacity=0;},7000);
+
+// joystick + keys
+const joy=$('joy'),knob=$('knob');let jx=0,jy=0,jid=null;
+function jmove(e){const r=joy.getBoundingClientRect();let dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);const max=r.width/2-18,m=Math.hypot(dx,dy);if(m>max){dx*=max/m;dy*=max/m;}knob.style.transform='translate('+dx+'px,'+dy+'px)';jx=dx/max;jy=dy/max;}
+function jend(e){if(e.pointerId!==jid)return;jid=null;jx=jy=0;knob.style.transform='';}
+joy.addEventListener('pointerdown',e=>{jid=e.pointerId;try{joy.setPointerCapture(e.pointerId);}catch(_){}jmove(e);});
+joy.addEventListener('pointermove',e=>{if(e.pointerId===jid)jmove(e);});
+joy.addEventListener('pointerup',jend);joy.addEventListener('pointercancel',jend);
+const keys={};
+addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key===' '||e.key==='Enter'){if(document.activeElement!==$('act'))doAction();}});
+addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
+
+const actBtn=$('act');let ctx={a:'none'};
+actBtn.addEventListener('click',doAction);
+function doAction(){
+  const a=ctx.a;
+  if(a==='pick'){const m=ctx.m;m.alive=false;scene.remove(m.g);mushN++;$('mushN').textContent='紅帽蘑菇 '+mushN;toast('採到紅帽蘑菇！明天早上會再長出來。',1800);}
+  else if(a==='purify'){potN--;$('potN').textContent='淨霧藥劑 '+potN;purifyT=0;ring.position.set(player.position.x,0.2,player.position.z);toast('把淨霧藥劑灑向灰霧……',2200);}
+  else if(a==='tree'){toast('燈芯樹微微發著光。啾燈：「這是大媽媽，整座島的心臟喔！」',3600);}
+  else if(a==='spirit'){toast('火苔精：「呼啊……睡了好久。你身上有大媽媽的光呢。」',3800);}
+  else if(a==='blocked'){toast(ctx.msg,2600);}
+}
+
+// clock
+let gameMin=7*60;
+function fmtClock(){const h=Math.floor(gameMin/60)%24,m=Math.floor(gameMin%60);return '春季 · 第 1 天 · '+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');}
+
+function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.fov=w<h?50:40;camera.updateProjectionMatrix();}
+addEventListener('resize',resize);resize();
+
+const camPos=new THREE.Vector3(-3,21,38),camLook=new THREE.Vector3();
+let wasHit=false,bumpT=0;let last=performance.now(),walk=0,blockedAt=0,lastRegion='';
+function frame(now){
+  const dt=Math.min(0.05,(now-last)/1000);last=now;const t=now/1000;
+  gameMin+=dt*1.6;$('clock').textContent=fmtClock();
+
+  // move
+  let mx=jx,mz=jy;
+  if(keys['a']||keys['arrowleft'])mx-=1;if(keys['d']||keys['arrowright'])mx+=1;
+  if(keys['w']||keys['arrowup'])mz-=1;if(keys['s']||keys['arrowdown'])mz+=1;
+  const ml=Math.hypot(mx,mz);
+  const p=player.position;
+  if(ml>0.08){
+    const sp=7.5*Math.min(1,ml);mx/=ml;mz/=ml;
+    let nx=p.x+mx*sp*dt,nz=p.z+mz*sp*dt;
+    let msg='';
+    if(!purified&&inForest(nx,nz)){nz=-21;msg='灰霧太濃了，進不去。要用淨霧藥劑才行。';}
+    if(inCoast(nx,nz)&&nz>-21){nx=28;msg='潮汐海岸的灰霧，要等到第二章才能淨化。';}
+    const r=Math.hypot(nx,nz);if(r>R-1.5){nx*=(R-1.5)/r;nz*=(R-1.5)/r;}
+    if(msg&&now-blockedAt>3000){toast(msg,2400);blockedAt=now;}
+    const PR=0.55;let hit=false;
+    for(let it=0;it<2;it++){
+      for(const c of colliders){const dx=nx-c.x,dz=nz-c.z,d=Math.hypot(dx,dz),md=c.r+PR;if(d<md&&d>1e-4){nx=c.x+dx/d*md;nz=c.z+dz/d*md;hit=true;}}
+      // workshop house: rotated box
+      const hr=house.rotation.y,cs=Math.cos(hr),sn=Math.sin(hr);
+      const rx=nx-house.position.x,rz=nz-house.position.z;
+      let lx=rx*cs-rz*sn,lz=rx*sn+rz*cs;const hx=2.5+PR,hz=2.1+PR;
+      if(Math.abs(lx)<hx&&Math.abs(lz)<hz){hit=true;const px=hx-Math.abs(lx),pz=hz-Math.abs(lz);if(px<pz)lx=Math.sign(lx||1)*hx;else lz=Math.sign(lz||1)*hz;
+        nx=house.position.x+lx*cs+lz*sn;nz=house.position.z-lx*sn+lz*cs;}
+    }
+    if(hit&&!wasHit){bumpT=0.18;}
+    wasHit=hit;
+    p.x=nx;p.z=nz;
+    player.rotation.y=Math.atan2(mx,mz);walk+=dt*12;
+    body.position.y=Math.abs(Math.sin(walk))*0.14;
+  }else{body.position.y*=0.8;wasHit=false;}
+  if(bumpT>0){bumpT-=dt;const k=Math.max(0,bumpT)/0.18;body.scale.set(1+0.18*k,1-0.16*k,1+0.18*k);}else body.scale.set(1,1,1);
+
+  // camera
+  camPos.lerp(new THREE.Vector3(p.x,p.y+21,p.z+18),1-Math.pow(0.002,dt));
+  camera.position.copy(camPos);camLook.set(p.x,p.y+1,p.z-3);camera.lookAt(camLook);
+
+  // moth
+  moth.position.set(p.x+Math.cos(t*1.3)*1.4,2.6+Math.sin(t*2.1)*0.3,p.z+Math.sin(t*1.3)*1.4);
+  const fl=Math.sin(t*22)*0.9;wL.rotation.y=fl;wR.rotation.y=-fl;
+
+  // ambient
+  lanterns.forEach((l,i)=>{l.scale.setScalar(1+Math.sin(t*2+i)*0.15);});
+  brew.material.color.setHSL(0.72,0.55,0.72+Math.sin(t*3)*0.05);
+  const drift=m=>{const u=m.userData;m.position.x=u.bx+Math.sin(t*0.4+u.ph)*1.5;m.position.z=u.bz+Math.cos(t*0.3+u.ph)*1.2;};
+  coastMist.arr.forEach(drift);
+  if(forestMist.mat.opacity>0.001)forestMist.arr.forEach(drift);
+
+  // purify animation
+  if(purifyT>=0){
+    purifyT+=dt;const k=Math.min(1,purifyT/2.6),e=k*k*(3-2*k);
+    ring.material.opacity=(1-k)*0.85;ring.scale.setScalar(1+e*40);
+    forestMist.mat.opacity=0.8*(1-e);forestMist.arr.forEach(m=>{const s=m.userData.s*(1+e*0.8);m.scale.set(s*1.5,s,1);m.position.y+=dt*1.5;});
+    lerps.forEach(l=>l.m.color.copy(l.a).lerp(l.b,e));
+    if(k>=1){purifyT=-1;purified=true;forestMist.arr.forEach(m=>{m.visible=false;});toast('火苔之森淨化完成！灰霧變成了白霧，沉睡的火苔精醒來了。',4200);}
+  }
+  if(purified){spirit.position.y=Math.abs(Math.sin(t*3))*0.35;spirit.rotation.y=Math.sin(t)*0.4;}
+
+  // region label
+  let reg='燈芯島 · 小谷村';
+  if(p.z<-17)reg=purified?'火苔之森':'火苔之森（灰霧）';
+  else if(p.x>22)reg='潮汐海岸（灰霧）';
+  else if(Math.hypot(p.x,p.z+13)<9)reg='燈芯樹';
+  if(reg!==lastRegion){$('region').textContent=reg;lastRegion=reg;}
+
+  // context action
+  let best=null,bd=2.4;mushes.forEach(m=>{if(!m.alive)return;const d=Math.hypot(m.x-p.x,m.z-p.z);if(d<bd){bd=d;best=m;}});
+  if(best)ctx={a:'pick',m:best,label:'採集'};
+  else if(!purified&&purifyT<0&&p.z<-17&&potN>0)ctx={a:'purify',label:'淨霧'};
+  else if(purified&&Math.hypot(p.x-spirit.position.x,p.z-spirit.position.z)<4)ctx={a:'spirit',label:'對話'};
+  else if(Math.hypot(p.x,p.z+13)<6)ctx={a:'tree',label:'觀察'};
+  else ctx={a:'none',label:'互動'};
+  if(actBtn.dataset.a!==ctx.a){actBtn.dataset.a=ctx.a;actBtn.textContent=ctx.label;}
+
+  renderer.render(scene,camera);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+setTimeout(()=>toast('往北走（畫面上方）到灰霧邊緣，用淨霧藥劑淨化火苔之森。',4200),900);
+})();
+</script>
+
+</body>
+</html>
