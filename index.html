@@ -35,6 +35,16 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--sky);color:var(-
 #act[data-a="none"]{background:#B9AE9C;box-shadow:0 5px 0 #8E846F}
 #act[data-a="purify"]{background:#7E5FC4;box-shadow:0 5px 0 #5A4196}
 #help{left:50%;bottom:calc(150px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);font-size:13px;color:var(--ink);background:rgba(255,248,236,.85);border-radius:999px;padding:6px 14px;white-space:nowrap;transition:opacity .6s}
+#mini{position:fixed;z-index:3;left:max(12px,env(safe-area-inset-left,0px));top:calc(84px + env(safe-area-inset-top,0px));width:112px;height:112px;border-radius:50%;border:4px solid var(--paper);box-shadow:0 3px 0 var(--paper-edge);background:#6EC3DE;cursor:pointer;touch-action:manipulation}
+#miniN{position:fixed;z-index:4;left:calc(max(12px,env(safe-area-inset-left,0px)) + 52px);top:calc(78px + env(safe-area-inset-top,0px));width:18px;height:18px;border-radius:50%;background:var(--ink);color:#fff;font:700 10px/18px var(--f-ui);text-align:center;pointer-events:none}
+#mapOv{position:fixed;inset:0;z-index:10;background:rgba(36,42,58,.55);display:flex;align-items:center;justify-content:center;padding:calc(12px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
+#mapOv[hidden],[hidden]{display:none!important}
+#mapBox{position:relative;width:min(100%,640px);height:min(100%,760px);border-radius:24px;overflow:hidden;background:#6EC3DE;border:5px solid var(--paper);box-shadow:0 5px 0 var(--paper-edge)}
+#big{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+.mbtn{position:absolute;width:48px;height:48px;border-radius:14px;border:0;background:var(--paper);box-shadow:0 3px 0 var(--paper-edge);font:700 22px var(--f-ui);color:var(--ink);cursor:pointer}
+.mbtn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+#mapTitle{position:absolute;left:12px;top:12px;font-size:15px;font-weight:700}
+#mapHint{position:absolute;left:12px;bottom:12px;font-size:12px;color:var(--ink-soft)}
 @media (prefers-reduced-motion:reduce){#toast{transition:none}}
 </style>
 </head>
@@ -53,6 +63,18 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--sky);color:var(-
 </div>
 <div class="hud card" id="toast" role="status" aria-live="polite"></div>
 <div class="hud" id="help">拖曳左下搖桿移動 · 電腦可用 WASD 或方向鍵</div>
+<canvas id="mini" aria-label="小地圖，點一下開啟大地圖" role="button" tabindex="0"></canvas><div id="miniN">北</div>
+<div id="mapOv" hidden>
+  <div id="mapBox">
+    <canvas id="big" aria-label="燈芯島地圖，可拖曳與縮放"></canvas>
+    <div class="card" id="mapTitle">燈芯島地圖</div>
+    <button class="mbtn" id="mClose" type="button" aria-label="關閉地圖" style="right:12px;top:12px">×</button>
+    <button class="mbtn" id="mIn" type="button" aria-label="放大" style="right:12px;top:76px">+</button>
+    <button class="mbtn" id="mOut" type="button" aria-label="縮小" style="right:12px;top:132px">−</button>
+    <button class="mbtn" id="mMe" type="button" aria-label="回到我的位置" style="right:12px;top:188px;font-size:14px">我</button>
+    <div class="card" id="mapHint">雙指或滾輪縮放 · 拖曳移動</div>
+  </div>
+</div>
 <div id="joy" aria-label="移動搖桿" role="application"><div id="knob"></div></div>
 <button id="act" type="button" data-a="none">互動</button>
 
@@ -72,7 +94,7 @@ scene.add(new THREE.HemisphereLight(0xffffff,0x9fbf88,0.65));
 const sun=new THREE.DirectionalLight(0xffffff,0.75);sun.position.set(12,24,10);scene.add(sun);
 
 // curved-world bend shared by every material
-const CURVE=0.006;const curveU={value:CURVE};const colliders=[];
+const CURVE=0.006;const curveU={value:CURVE};const colliders=[];const treeDots=[];
 function bend(m){
   m.onBeforeCompile=function(sh){
     sh.uniforms.uCurve=curveU;
@@ -133,7 +155,7 @@ function tree(x,z,forest){
   part(trunkG,forest?fTrunk:toon(0x8A5A36),0,0.8,0,g,0.12);
   part(coneG1,forest?fLeaf:toon(0x4E9E4A),0,2.8,0,g,0.07);
   part(coneG2,forest?fLeaf2:toon(0x5DAE55),0,4.1,0,g,0.08);
-  scene.add(g);colliders.push({x,z,r:0.75*s});
+  scene.add(g);colliders.push({x,z,r:0.75*s});treeDots.push({x,z,f:forest});
 }
 let placed=0;
 while(placed<64){
@@ -271,6 +293,57 @@ function doAction(){
 let gameMin=7*60;
 function fmtClock(){const h=Math.floor(gameMin/60)%24,m=Math.floor(gameMin%60);return '春季 · 第 1 天 · '+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');}
 
+// ---- maps ----
+const mini=$('mini'),big=$('big'),mapOv=$('mapOv');
+const LABELS=[['小谷村',-6,6],['燈芯樹',0,-17],['火苔之森',0,-42],['潮汐海岸',45,4],['工坊',9,-1],['碼頭',0,58]];
+function drawMap(ctx,w,h,cx,cz,sc,full){
+  const X=x=>w/2+(x-cx)*sc,Y=z=>h/2+(z-cz)*sc;
+  ctx.clearRect(0,0,w,h);ctx.fillStyle='#6EC3DE';ctx.fillRect(0,0,w,h);
+  ctx.fillStyle='#F1DCA4';ctx.beginPath();ctx.arc(X(0),Y(0),(R+5)*sc,0,7);ctx.fill();
+  ctx.save();ctx.beginPath();ctx.arc(X(0),Y(0),R*sc,0,7);ctx.clip();
+  ctx.fillStyle='#8FCB6B';ctx.fillRect(0,0,w,h);
+  ctx.fillStyle='#A9DB86';ctx.beginPath();ctx.arc(X(-2),Y(4),17*sc,0,7);ctx.fill();
+  const fog='#A5A2B6';
+  ctx.fillStyle=purified?'#5E9E4A':fog;ctx.fillRect(0,0,w,Y(-21));
+  ctx.fillStyle=fog;ctx.fillRect(X(28),Y(-21),w,h);
+  treeDots.forEach(t=>{ctx.fillStyle=t.f&&!purified?'#8E8C9C':'#3F8A3F';ctx.beginPath();ctx.arc(X(t.x),Y(t.z),Math.max(1.2,1.1*sc),0,7);ctx.fill();});
+  ctx.restore();
+  ctx.fillStyle='#B07A4A';ctx.fillRect(X(-1.5),Y(R-2),3*sc,11*sc);
+  ctx.save();ctx.translate(X(9),Y(4));ctx.rotate(0.5);ctx.fillStyle='#D9694F';ctx.fillRect(-2.5*sc,-2.1*sc,5*sc,4.2*sc);ctx.restore();
+  ctx.fillStyle='#F7D154';ctx.strokeStyle='#C99A1E';ctx.lineWidth=2;ctx.beginPath();ctx.arc(X(0),Y(-13),Math.max(4,2.6*sc),0,7);ctx.fill();ctx.stroke();
+  if(purified){ctx.fillStyle='#E0663F';ctx.beginPath();ctx.arc(X(2),Y(-36),Math.max(3,1.6*sc),0,7);ctx.fill();}
+  mushes.forEach(m=>{if(!m.alive)return;ctx.fillStyle='#E8584A';ctx.beginPath();ctx.arc(X(m.x),Y(m.z),Math.max(2,0.8*sc),0,7);ctx.fill();});
+  if(full){
+    ctx.font='700 '+Math.round(13+sc*0.6)+'px '+getComputedStyle(document.body).fontFamily;ctx.textAlign='center';ctx.textBaseline='middle';
+    LABELS.forEach(([t,x,z])=>{let txt=t;if((t==='火苔之森'&&!purified)||t==='潮汐海岸')txt=t+'（灰霧）';const tw=ctx.measureText(txt).width+16;ctx.fillStyle='rgba(255,248,236,.92)';ctx.beginPath();ctx.roundRect?ctx.roundRect(X(x)-tw/2,Y(z)-13,tw,26,13):ctx.rect(X(x)-tw/2,Y(z)-13,tw,26);ctx.fill();ctx.fillStyle='#3B2A1E';ctx.fillText(txt,X(x),Y(z)+1);});
+  }
+  const p=player.position,r=player.rotation.y,px=X(p.x),py=Y(p.z),dx=Math.sin(r),dy=Math.cos(r),k=full?11:8;
+  ctx.fillStyle='#FFFFFF';ctx.beginPath();ctx.arc(px,py,k*0.85,0,7);ctx.fill();
+  ctx.fillStyle='#F29E4C';ctx.beginPath();ctx.moveTo(px+dx*k,py+dy*k);ctx.lineTo(px-dy*k*0.6-dx*k*0.5,py+dx*k*0.6-dy*k*0.5);ctx.lineTo(px+dy*k*0.6-dx*k*0.5,py-dx*k*0.6-dy*k*0.5);ctx.closePath();ctx.fill();
+}
+function fitCanvas(c){const d=Math.min(window.devicePixelRatio||1,2),w=c.clientWidth,h=c.clientHeight;if(c.width!==Math.round(w*d)||c.height!==Math.round(h*d)){c.width=Math.round(w*d);c.height=Math.round(h*d);}const ctx=c.getContext('2d');ctx.setTransform(d,0,0,d,0,0);return [ctx,w,h];}
+let mapOpen=false,mapZ=1,mcx=0,mcz=0;
+function baseScale(){return Math.min(big.clientWidth,big.clientHeight)/(2*(R+8));}
+function openMap(){mapOpen=true;mapOv.hidden=false;mapZ=1;mcx=0;mcz=0;jx=jy=0;knob.style.transform='';}
+function closeMap(){mapOpen=false;mapOv.hidden=true;}
+function clampMap(){mapZ=Math.min(5,Math.max(1,mapZ));const lim=R+8;mcx=Math.max(-lim,Math.min(lim,mcx));mcz=Math.max(-lim,Math.min(lim,mcz));}
+mini.addEventListener('click',openMap);mini.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openMap();}});
+$('mClose').addEventListener('click',closeMap);
+$('mIn').addEventListener('click',()=>{mapZ*=1.4;clampMap();});
+$('mOut').addEventListener('click',()=>{mapZ/=1.4;clampMap();});
+$('mMe').addEventListener('click',()=>{mcx=player.position.x;mcz=player.position.z;});
+mapOv.addEventListener('click',e=>{if(e.target===mapOv)closeMap();});
+addEventListener('keydown',e=>{if(e.key==='Escape'&&mapOpen)closeMap();if((e.key==='m'||e.key==='M')&&!mapOpen)openMap();});
+const ptrs=new Map();let pinch0=0,z0=1;
+big.addEventListener('pointerdown',e=>{try{big.setPointerCapture(e.pointerId);}catch(_){}ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});if(ptrs.size===2){const [a,b]=[...ptrs.values()];pinch0=Math.hypot(a.x-b.x,a.y-b.y);z0=mapZ;}});
+big.addEventListener('pointermove',e=>{if(!ptrs.has(e.pointerId))return;const prev=ptrs.get(e.pointerId);const cur={x:e.clientX,y:e.clientY};ptrs.set(e.pointerId,cur);
+  if(ptrs.size===1){const s=baseScale()*mapZ;mcx-=(cur.x-prev.x)/s;mcz-=(cur.y-prev.y)/s;}
+  else if(ptrs.size===2&&pinch0>0){const [a,b]=[...ptrs.values()];mapZ=z0*Math.hypot(a.x-b.x,a.y-b.y)/pinch0;}
+  clampMap();});
+const endP=e=>{ptrs.delete(e.pointerId);if(ptrs.size<2)pinch0=0;};
+big.addEventListener('pointerup',endP);big.addEventListener('pointercancel',endP);
+big.addEventListener('wheel',e=>{e.preventDefault();mapZ*=e.deltaY<0?1.12:1/1.12;clampMap();},{passive:false});
+
 function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.fov=w<h?50:40;camera.updateProjectionMatrix();}
 addEventListener('resize',resize);resize();
 
@@ -284,6 +357,7 @@ function frame(now){
   let mx=jx,mz=jy;
   if(keys['a']||keys['arrowleft'])mx-=1;if(keys['d']||keys['arrowright'])mx+=1;
   if(keys['w']||keys['arrowup'])mz-=1;if(keys['s']||keys['arrowdown'])mz+=1;
+  if(mapOpen){mx=0;mz=0;}
   const ml=Math.hypot(mx,mz);
   const p=player.position;
   if(ml>0.08){
@@ -353,6 +427,8 @@ function frame(now){
   else ctx={a:'none',label:'互動'};
   if(actBtn.dataset.a!==ctx.a){actBtn.dataset.a=ctx.a;actBtn.textContent=ctx.label;}
 
+  {const [c,w,h]=fitCanvas(mini);drawMap(c,w,h,player.position.x,player.position.z,1.15,false);}
+  if(mapOpen){const [c,w,h]=fitCanvas(big);drawMap(c,w,h,mcx,mcz,baseScale()*mapZ,true);}
   renderer.render(scene,camera);
   requestAnimationFrame(frame);
 }
