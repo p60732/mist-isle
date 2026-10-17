@@ -219,7 +219,7 @@ function tree(x,z,forest){
   const trunk=part(trunkG,mT,0,0.8,0,g,0.12),c1=part(coneG1,m1,0,2.8,0,g,0.07),c2=part(coneG2,m2,0,4.1,0,g,0.08);
   const col={x,z,r:0.75*s};
   scene.add(g);colliders.push(col);treeDots.push({x,z,f:forest});
-  trees.push({g,x,z,s,forest,trunk,crown:[c1,c2],mats:[mT,m1,m2],outlines:[trunk,c1,c2].map(m=>m.children[0]),alpha:1,hits:0,state:'up',t:0,col,rotY:g.rotation.y,wood:3,shaken:false});
+  trees.push({g,x,z,s,forest,trunk,crown:[c1,c2],mats:[mT,m1,m2],outlines:[trunk,c1,c2].map(m=>m.children[0]),alpha:1,hits:0,state:'up',t:0,col,rotY:g.rotation.y,wood:3,branches:4});
 }
 let nTree=0;
 while(nTree<64){
@@ -545,8 +545,8 @@ function doAction(){
     if(t.wood>0){t.wood--;inv.wood++;msg='木材 +1'+(t.wood?'（這棵今天還有 '+t.wood+' 塊）':'（這棵今天砍完了）');}
     if(ax.fell&&t.hits>=3){t.state='falling';t.t=0;msg='用鐵斧把樹砍倒了！樹樁到明天早上 5 點會長回來。';}
     hotbarUI();toast(msg||'咚！',1400);}
-  else if(a==='shake'){const t=ctx.t;face(t.x,t.z);t.t=0.45;if(t.shaken){toast('剛剛搖過了，今天不會再掉東西。',1400);return;}t.shaken=true;
-    if(Math.random()<0.55){const n=Math.random()<0.4?2:1;if(!fits({k:'branch',n})){toast(FULL,2000);return;}inv.branch=(inv.branch||0)+n;hotbarUI();toast('掉下了樹枝 ×'+n+'！',1300);}else toast('沙沙……什麼都沒掉下來。',1200);}
+  else if(a==='shake'){const t=ctx.t;face(t.x,t.z);t.t=0.45;if(t.branches<=0){toast('這棵樹今天的樹枝都搖光了，換一棵吧。',1400);return;}
+    if(Math.random()<0.8){const n=Math.min(t.branches,Math.random()<0.45?2:1);if(!fits({k:'branch',n})){toast(FULL,2000);return;}t.branches-=n;inv.branch=(inv.branch||0)+n;hotbarUI();toast('掉下了樹枝 ×'+n+(t.branches?'！（這棵今天還有 '+t.branches+' 根）':'！（這棵今天搖光了）'),1400);}else toast('沙沙……這下沒掉，再搖搖看。',1100);}
   else if(a==='mine'){const r=ctx.r;face(r.x,r.z);const q=Math.random();const k=q<0.55?'stone':q<0.75?'clay':q<0.9?'iron':'crys';if(!fits({k,n:1})){toast(FULL,2000);return;}
     useTool('pick');r.hits++;r.t=0.25;inv[k]=(inv[k]||0)+1;let msg=NAME[k]+' +1'+(k==='crys'?'！':'')+'（今天還能敲 '+(8-r.hits)+' 下）';if(r.hits>=8){r.state='empty';msg=NAME[k]+' +1。這塊石頭今天敲完了，明天早上 5 點恢復。';}hotbarUI();toast(msg,1500);}
   else if(a==='purify'){inv.potion--;hotbarUI();purifyT=0;ring.position.set(player.position.x,0.2,player.position.z);toast('把淨霧藥劑灑向灰霧……',2200);}
@@ -673,7 +673,7 @@ function renderSleep(){const h=hourNow();
   sheet.innerHTML='<div class="shead"><h2>要睡到幾點？</h2><button class="pbtn" type="button" data-x="close">不睡了</button></div>'+
   '<div class="note">現在 '+String(Math.floor(h)).padStart(2,'0')+':'+String(Math.floor(gameMin%60)).padStart(2,'0')+'。睡覺會回滿體力。過了早上 5 點就是新的一天：每棵樹又能砍出 3 塊木材、石頭恢復、蘑菇長回來。</div>'+
   opts.map(([hh,l,n])=>'<button class="pbtn opt" type="button" data-sleep="'+hh+'"><span>'+l+'</span><span class="note">'+n+'</span></button>').join('');}
-function newDay(){trees.forEach(t=>{t.wood=3;t.shaken=false;if(t.state!=='up'){t.state='up';t.hits=0;t.t=0;t.g.rotation.z=0;t.crown.forEach(c=>{c.visible=true;});t.trunk.scale.y=1;t.trunk.position.y=0.8;t.col.r=0.75*t.s;}});
+function newDay(){trees.forEach(t=>{t.wood=3;t.branches=4;if(t.state!=='up'){t.state='up';t.hits=0;t.t=0;t.g.rotation.z=0;t.crown.forEach(c=>{c.visible=true;});t.trunk.scale.y=1;t.trunk.position.y=0.8;t.col.r=0.75*t.s;}});
   rocks.forEach(r=>{r.state='full';r.hits=0;r.regrow=0;r.m.scale.set(r.sc[0],r.sc[1],r.sc[2]);r.mat.color.setHex(0xA9A39A);});
   mushes.forEach(m=>{if(!m.alive){m.alive=true;scene.add(m.g);}});nodes.forEach(n=>{n.taken=false;});}
 function sleepUntil(hh){closePanel();const bed=items.find(i=>i.id==='f_bed');const c=centerOf(bed.id,bed.ix,bed.iz,bed.rot);
