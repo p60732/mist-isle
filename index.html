@@ -93,7 +93,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--sky);color:var(-
 </div>
 <div id="side">
   <button class="sbtn" type="button" data-p="bag"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6z"></path><path d="M9 8V6a3 3 0 0 1 6 0v2"></path></svg>背包</button>
-  <button class="sbtn" type="button" data-p="craft"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"></path><path d="M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"></path></svg>合成</button>
+  <button class="sbtn" type="button" data-p="craft"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"></path><path d="M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"></path></svg>配方書</button>
   <button class="sbtn" type="button" data-p="dress"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4L3 7l2 4 3-1v10h8V10l3 1 2-4-5-3a4 4 0 0 1-8 0z"></path></svg>換裝</button>
   <button class="sbtn" type="button" data-p="inn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-6 8 6"></path><path d="M6 10v9h12v-9"></path><path d="M10 19v-5h4v5"></path></svg>旅人小屋<span class="badge">限定</span></button>
   <button class="sbtn" type="button" data-p="quest"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4h11v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2h12"></path><path d="M7 4a2 2 0 0 0-2 2v10"></path></svg>任務</button>
@@ -219,8 +219,32 @@ part(new THREE.BoxGeometry(5,3.2,4.2),toon(0xF3E3C3),0,1.6,0,house,0.04);
 const roof=part(new THREE.ConeGeometry(4.3,2.6,4),toon(0xD9694F),0,4.5,0,house,0.05);roof.rotation.y=Math.PI/4;
 part(new THREE.BoxGeometry(1.1,1.9,0.2),toon(0x8A5A36),0,0.95,2.15,house,0.06);
 part(new THREE.BoxGeometry(0.9,0.9,0.2),toon(0x9FD6EC),1.6,2.1,2.15,house,0.08);
-const caul=new THREE.Group();caul.position.set(4.2,0,7.5);scene.add(caul);colliders.push({x:4.2,z:7.5,r:1.0});
+// workshop yard: stone floor, sign, chimney, three stations
+const yard=new THREE.Mesh(new THREE.CircleGeometry(7.5,28),toon(0xE2D3B3));yard.rotation.x=-Math.PI/2;yard.position.set(8.5,0.04,9);scene.add(yard);
+const chim=part(new THREE.BoxGeometry(0.8,2.2,0.8),toon(0x9A6B52),1.4,5.2,-0.6,house,0.08);
+const smokeM=bend(new THREE.MeshBasicMaterial({color:0xFFFFFF,transparent:true,opacity:0.6,depthWrite:false}));const smokes=[];
+for(let i=0;i<4;i++){const m=new THREE.Mesh(new THREE.SphereGeometry(0.45,8,6),smokeM);house.add(m);smokes.push(m);}
+const sign=new THREE.Group();sign.position.set(3.2,0,12.6);scene.add(sign);colliders.push({x:3.2,z:12.6,r:0.4});
+part(new THREE.BoxGeometry(0.25,2,0.25),toon(0x8A5A36),0,1,0,sign,0.1);part(new THREE.BoxGeometry(2.4,1,0.2),toon(0xF3E3C3),0,2.1,0,sign,0.05);
+const STATIONS=[];
+// cauldron (大釜)
+const caul=new THREE.Group();caul.position.set(4.6,0,7.4);caul.scale.setScalar(1.35);scene.add(caul);colliders.push({x:4.6,z:7.4,r:1.4});
 part(new THREE.SphereGeometry(0.9,12,10),toon(0x4A4458),0,0.8,0,caul,0.08);
+[0,2.1,4.2].forEach(a=>{const l=part(new THREE.CylinderGeometry(0.08,0.08,0.6,5),toon(0x3B3446),Math.cos(a)*0.6,0.2,Math.sin(a)*0.6,caul,0.2);});
+const fireM=bend(new THREE.MeshBasicMaterial({color:0xFF9A3C}));const fire=new THREE.Mesh(new THREE.ConeGeometry(0.35,0.6,6),fireM);fire.position.y=0.15;caul.add(fire);
+STATIONS.push({id:'caul',name:'大釜',x:4.6,z:7.4,r:1.4});
+// workbench (工作台)
+const bench=new THREE.Group();bench.position.set(13.6,0,10);bench.rotation.y=-0.4;scene.add(bench);colliders.push({x:13.6,z:10,r:1.5});
+part(new THREE.BoxGeometry(2.6,0.25,1.3),toon(0xB07A4A),0,1.05,0,bench,0.06);
+[[-1.1,-0.5],[1.1,-0.5],[-1.1,0.5],[1.1,0.5]].forEach(([x,z])=>part(new THREE.BoxGeometry(0.2,1,0.2),toon(0x8A5A36),x,0.5,z,bench,0.1));
+part(new THREE.BoxGeometry(0.9,0.12,0.4),toon(0xA9A39A),-0.5,1.24,0.1,bench,0.1);part(new THREE.BoxGeometry(0.12,0.12,0.9),toon(0x8A5A36),0.6,1.24,0,bench,0.12);
+STATIONS.push({id:'bench',name:'工作台',x:13.6,z:10,r:1.5});
+// loom (織布機)
+const loom=new THREE.Group();loom.position.set(9.4,0,13.4);scene.add(loom);colliders.push({x:9.4,z:13.4,r:1.4});
+[[-1,-0.5],[1,-0.5],[-1,0.5],[1,0.5]].forEach(([x,z])=>part(new THREE.BoxGeometry(0.18,1.9,0.18),toon(0x8A5A36),x,0.95,z,loom,0.1));
+part(new THREE.BoxGeometry(2.2,0.16,0.16),toon(0x8A5A36),0,1.85,-0.5,loom,0.1);part(new THREE.BoxGeometry(2.2,0.16,0.16),toon(0x8A5A36),0,0.7,0.5,loom,0.1);
+part(new THREE.BoxGeometry(1.8,1.0,0.04),toon(0xE9C46A),0,1.3,-0.1,loom,0.04);
+STATIONS.push({id:'loom',name:'織布機',x:9.4,z:13.4,r:1.4});
 const brew=new THREE.Mesh(new THREE.CircleGeometry(0.72,16),bend(new THREE.MeshBasicMaterial({color:0xB9A3E6})));brew.rotation.x=-Math.PI/2;brew.position.y=1.42;caul.add(brew);
 
 // lantern tree
@@ -311,24 +335,31 @@ const ICON={
  stone:'<path d="M8 34 L14 16 L30 10 L42 22 L38 38 L18 42 Z" fill="#A9A39A"/><path d="M14 16 L30 10 L28 24 Z" fill="#C7C1B8"/>',
  crys:'<path d="M24 4 L36 18 L30 44 L18 44 L12 18 Z" fill="#7FC8E8"/><path d="M24 4 L24 44 L18 44 L12 18 Z" fill="#5AA9D1"/>',
  potion:'<path d="M18 6 h12 v10 l8 12 a12 12 0 0 1 -10 18 h-8 a12 12 0 0 1 -10 -18 l8 -12 Z" fill="#B9A3E6"/><path d="M12 30 h24 a12 12 0 0 1 -10 14 h-4 a12 12 0 0 1 -10 -14 Z" fill="#7E5FC4"/>',
+ stam:'<path d="M18 8 h12 v8 l6 10 a12 12 0 0 1 -10 18 h-4 a12 12 0 0 1 -10 -18 l6 -10 Z" fill="#F6B26B"/><path d="M14 30 h20 a10 10 0 0 1 -8 12 h-4 a10 10 0 0 1 -8 -12 Z" fill="#E07B39"/>',
+ flax:'<path d="M24 44 V10" stroke="#C9A86E" stroke-width="3"/><path d="M24 12 q-10 4 -10 14 M24 18 q10 4 10 14" stroke="#9ED67A" stroke-width="3" fill="none"/>',
  axe:'<path d="M21 6 h6 v38 h-6 Z" fill="#B07A4A"/><path d="M27 8 Q44 10 42 26 Q34 22 27 22 Z" fill="#A9A39A"/>',
  pick:'<path d="M21 10 h6 v34 h-6 Z" fill="#B07A4A"/><path d="M6 16 Q24 2 42 16 Q24 10 6 16 Z" fill="#A9A39A"/>'
 };
-const NAME={mush:'紅帽蘑菇',wood:'木材',stone:'石頭',crys:'藍水晶',potion:'淨霧藥劑',axe:'石斧',pick:'石鎬'};
-const DESC={mush:'長在樹蔭下的蘑菇，隔天會重新長出來。可以直接吃，回復 15 點體力。',wood:'砍樹得到的木材，做工具和家具的基本材料。',stone:'敲石頭得到的石頭，做工具的材料。',crys:'敲石頭時偶爾會掉出來的藍水晶，鍊金的重要材料。',potion:'師父筆記裡的配方。灑向灰霧，可以淨化被蝕污染的霧。',axe:'用來砍樹。每砍一下耐久 -1，歸零就會壞掉。',pick:'用來敲石頭。每敲一下耐久 -1，歸零就會壞掉。'};
+const NAME={stam:'體力藥水',flax:'麻草',mush:'紅帽蘑菇',wood:'木材',stone:'石頭',crys:'藍水晶',potion:'淨霧藥劑',axe:'石斧',pick:'石鎬'};
+const DESC={stam:'大釜熬的提神藥水，喝下回復 40 點體力。',flax:'火苔之森裡的植物，可以在織布機織成布。',mush:'長在樹蔭下的蘑菇，隔天會重新長出來。可以直接吃，回復 15 點體力。',wood:'砍樹得到的木材，做工具和家具的基本材料。',stone:'敲石頭得到的石頭，做工具的材料。',crys:'敲石頭時偶爾會掉出來的藍水晶，鍊金的重要材料。',potion:'師父筆記裡的配方。灑向灰霧，可以淨化被蝕污染的霧。',axe:'用來砍樹。每砍一下耐久 -1，歸零就會壞掉。',pick:'用來敲石頭。每敲一下耐久 -1，歸零就會壞掉。'};
 const svg=(k,sz)=>'<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 48 48" aria-hidden="true">'+ICON[k]+'</svg>';
-let inv={mush:0,wood:4,stone:3,crys:0,potion:0};
+let inv={mush:0,wood:4,stone:3,crys:0,potion:0,stam:0};
 let tools={axe:null,pick:null};
 let stamina=100;
 const RECIPES=[
- {id:'axe',name:'石斧',need:{wood:2,stone:1},make:()=>{tools.axe={dur:15,max:15};},tool:true},
- {id:'pick',name:'石鎬',need:{wood:2,stone:2},make:()=>{tools.pick={dur:15,max:15};},tool:true},
- {id:'potion',name:'淨霧藥劑',need:{mush:3,crys:1},make:()=>{inv.potion++;}}
+ {id:'axe',st:'bench',name:'石斧',need:{wood:2,stone:1},make:()=>{tools.axe={dur:15,max:15};},tool:true},
+ {id:'pick',st:'bench',name:'石鎬',need:{wood:2,stone:2},make:()=>{tools.pick={dur:15,max:15};},tool:true},
+ {id:'fixaxe',icon:'axe',st:'bench',name:'修理石斧',need:{stone:1},make:()=>{tools.axe.dur=Math.min(tools.axe.max,tools.axe.dur+8);},when:()=>tools.axe&&tools.axe.dur<tools.axe.max,note:'耐久 +8'},
+ {id:'fixpick',icon:'pick',st:'bench',name:'修理石鎬',need:{stone:1},make:()=>{tools.pick.dur=Math.min(tools.pick.max,tools.pick.dur+8);},when:()=>tools.pick&&tools.pick.dur<tools.pick.max,note:'耐久 +8'},
+ {id:'potion',st:'caul',name:'淨霧藥劑',need:{mush:3,crys:1},make:()=>{inv.potion++;}},
+ {id:'stam',st:'caul',name:'體力藥水',need:{mush:2,wood:1},make:()=>{inv.stam=(inv.stam||0)+1;},note:'喝下回復 40 體力'},
+ {id:'cloth',st:'loom',name:'粗麻布',need:{flax:3},make:()=>{},locked:'需要麻草，淨化火苔之森後可以採集',note:'做套裝的布料'}
 ];
+const STNAME={bench:'工作台',caul:'大釜',loom:'織布機'};
 let purified=false,purifyT=-1,curveOn=true,usedSlot='',usedT=0;
 function staUI(){$('staFill').style.width=stamina+'%';$('staFill').style.background=stamina<25?'#E0663F':'#6DBB58';}
 function hotbarUI(){
-  const slots=[['axe',tools.axe],['pick',tools.pick],['potion',inv.potion],['mush',inv.mush],[null,null]];
+  const slots=[['axe',tools.axe],['pick',tools.pick],['potion',inv.potion],['mush',inv.mush],['stam',inv.stam||0]];
   $('hotbar').innerHTML=slots.map(([k,v])=>{
     if(!k||!v)return '<button class="slot empty" type="button" tabindex="-1" aria-label="空格"></button>';
     const tool=typeof v==='object';
@@ -337,17 +368,18 @@ function hotbarUI(){
   }).join('');
 }
 $('hotbar').addEventListener('click',e=>{const b=e.target.closest('.slot');if(!b||!b.dataset.k)return;const k=b.dataset.k;
+  if(k==='stam'){if(stamina>=100){toast('體力已經是滿的。',1200);return;}inv.stam--;stamina=Math.min(100,stamina+40);staUI();hotbarUI();toast('喝了體力藥水，體力 +40。',1300);return;}
   if(k==='mush'){if(stamina>=100){toast('體力已經是滿的。',1200);return;}inv.mush--;stamina=Math.min(100,stamina+15);staUI();hotbarUI();toast('吃了紅帽蘑菇，體力 +15。',1300);}
   else if(k==='axe'||k==='pick'){const t=tools[k];toast(NAME[k]+'：耐久 '+t.dur+' / '+t.max,1300);}
   else toast(NAME[k]+' '+inv[k]+' 瓶。走到灰霧邊緣就能使用。',1600);});
 // panels
-const panel=$('panel'),sheet=$('sheet');let panelKind='',bagSel='wood';
+const panel=$('panel'),sheet=$('sheet');let craftSt='bench';let panelKind='',bagSel='wood';
 function openPanel(k){panelKind=k;panel.hidden=false;jx=jy=0;knob.style.transform='';renderPanel();}
 function closePanel(){panel.hidden=true;panelKind='';}
 panel.addEventListener('click',e=>{if(e.target===panel)closePanel();});
-addEventListener('keydown',e=>{if(e.key==='Escape'&&!panel.hidden)closePanel();if((e.key==='b'||e.key==='B')&&panel.hidden)openPanel('bag');if((e.key==='c'||e.key==='C')&&panel.hidden)openPanel('craft');});
+addEventListener('keydown',e=>{if(e.key==='Escape'&&!panel.hidden)closePanel();if((e.key==='b'||e.key==='B')&&panel.hidden)openPanel('bag');if((e.key==='r'||e.key==='R')&&panel.hidden)openPanel('book');});
 document.querySelectorAll('.sbtn').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.p;
-  if(k==='bag'||k==='craft')openPanel(k);
+  if(k==='bag')openPanel('bag');else if(k==='craft')openPanel('book');
   else toast({dress:'換裝畫面已在 UI 原型裡，M5 接進遊戲。',inn:'旅人小屋（招募、派遣）已在 UI 原型裡，M3 接進遊戲。',quest:'任務畫面已在 UI 原型裡，M4 接進遊戲。'}[k],2200);}));
 function renderPanel(){
   if(panelKind==='bag'){
@@ -361,11 +393,16 @@ function renderPanel(){
       (bagSel?'<div class="info"><b>'+NAME[bagSel]+'</b>　'+(tools[bagSel]?'耐久 '+tools[bagSel].dur+' / '+tools[bagSel].max:'持有 '+inv[bagSel])+'<br>'+DESC[bagSel]+'</div>':'<div class="info">背包是空的。</div>')+
       (bagSel==='mush'?'<button class="pbtn go" type="button" data-x="eat">吃一個（體力 +15）</button>':'')+
       '<div class="shead" style="margin-top:4px"><span class="note">畫面設定</span><button class="pbtn" type="button" data-x="curve">地平線彎曲：'+(curveOn?'開':'關')+'</button></div>';
+  }else if(panelKind==='book'){
+    sheet.innerHTML='<div class="shead"><h2>配方書</h2><button class="pbtn" type="button" data-x="close" aria-label="關閉配方書">關閉</button></div>'+
+      ['bench','caul','loom'].map(st=>'<div class="note" style="font-weight:700;font-size:14px;color:var(--ink)">'+STNAME[st]+'</div>'+RECIPES.filter(r=>r.st===st&&!r.when).map(r=>'<div class="rec"><span class="ic">'+svg(r.icon||r.id,36)+'</span><span class="tx"><span class="nm">'+r.name+'</span><span class="need">'+(r.locked?r.locked:Object.keys(r.need).map(k=>NAME[k]+' ×'+r.need[k]).join('、'))+'</span></span></div>').join('')).join('')+
+      '<div class="note">要製作，請走到工坊裡對應的工作台、大釜或織布機。</div>';
   }else if(panelKind==='craft'){
-    sheet.innerHTML='<div class="shead"><h2>鍊金工坊</h2><button class="pbtn" type="button" data-x="close" aria-label="關閉合成">關閉</button></div>'+
-      RECIPES.map(r=>{const ok=Object.keys(r.need).every(k=>inv[k]>=r.need[k]);const has=r.tool&&tools[r.id];
+    sheet.innerHTML='<div class="shead"><h2>'+STNAME[craftSt]+'</h2><button class="pbtn" type="button" data-x="close" aria-label="關閉">關閉</button></div>'+
+      RECIPES.filter(r=>r.st===craftSt&&(!r.when||r.when())).map(r=>{const ok=Object.keys(r.need).every(k=>inv[k]>=r.need[k]);const has=r.tool&&tools[r.id];
         const need=Object.keys(r.need).map(k=>'<span class="'+(inv[k]>=r.need[k]?'ok':'lack')+'">'+NAME[k]+' '+inv[k]+'/'+r.need[k]+'</span>').join('、');
-        return '<div class="rec"><span class="ic">'+svg(r.id,36)+'</span><span class="tx"><span class="nm">'+r.name+(has?'（耐久 '+has.dur+'/'+has.max+'）':'')+'</span><span class="need">'+need+'</span></span><button class="pbtn go" type="button" data-make="'+r.id+'"'+(ok?'':' disabled')+'>'+(has?'重做':'製作')+'</button></div>';}).join('')+
+        if(r.locked)return '<div class="rec" style="opacity:.6"><span class="ic">'+svg(r.icon||r.id,36)+'</span><span class="tx"><span class="nm">'+r.name+'</span><span class="need">'+r.locked+'</span></span><button class="pbtn" type="button" disabled>未解鎖</button></div>';
+        return '<div class="rec"><span class="ic">'+svg(r.icon||r.id,36)+'</span><span class="tx"><span class="nm">'+r.name+(has?'（耐久 '+has.dur+'/'+has.max+'）':'')+(r.note?'<span class="note">　'+r.note+'</span>':'')+'</span><span class="need">'+need+'</span></span><button class="pbtn go" type="button" data-make="'+r.id+'"'+(ok?'':' disabled')+'>'+(has?'重做':'製作')+'</button></div>';}).join('')+
       '<div class="note">示範版按下就完成。正式版合成時會有火候、攪拌小遊戲，做得好品質更高。</div>';
   }
 }
@@ -376,7 +413,7 @@ sheet.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)retu
   else if(t.dataset.sel){bagSel=t.dataset.sel;renderPanel();}
   else if(t.dataset.make){const r=RECIPES.find(x=>x.id===t.dataset.make);Object.keys(r.need).forEach(k=>inv[k]-=r.need[k]);r.make();hotbarUI();renderPanel();toast('做好了：'+r.name+'！',1400);}
 });
-function useTool(k){const t=tools[k];t.dur--;stamina=Math.max(0,stamina-3);usedSlot=k;usedT=0.4;staUI();if(t.dur<=0){tools[k]=null;toast(NAME[k]+'壞掉了！到合成再做一把吧。',2200);}hotbarUI();}
+function useTool(k){const t=tools[k];t.dur--;stamina=Math.max(0,stamina-3);usedSlot=k;usedT=0.4;staUI();if(t.dur<=0){tools[k]=null;toast(NAME[k]+'壞掉了！到工作台修理或再做一把吧。',2200);}hotbarUI();}
 staUI();hotbarUI();
 
 // joystick + keys
@@ -395,6 +432,7 @@ actBtn.addEventListener('click',doAction);
 function doAction(){
   const a=ctx.a;
   if(a==='need'){toast(ctx.msg,2200);return;}
+  if(a==='station'){craftSt=ctx.s;openPanel('craft');return;}
   if(a==='pick'){const m=ctx.m;m.alive=false;scene.remove(m.g);inv.mush++;hotbarUI();toast('採到紅帽蘑菇！明天早上會再長出來。',1800);}
   else if(a==='chop'){const t=ctx.t;useTool('axe');t.hits++;t.t=0.32;if(t.hits>=3){t.state='falling';t.t=0;inv.wood+=3;hotbarUI();toast('砍倒了！木材 +3。樹樁明天會再長成樹。',1800);}else{toast('咚！再砍 '+(3-t.hits)+' 下。',900);}}
   else if(a==='mine'){const r=ctx.r;useTool('pick');r.hits++;r.t=0.25;inv.stone++;let msg='石頭 +1';if(Math.random()<0.25){inv.crys++;msg+='，還敲出了藍水晶！';}if(r.hits>=3){r.state='empty';msg+=' 這塊石頭今天敲不出東西了。';}hotbarUI();toast(msg,1600);}
@@ -512,6 +550,8 @@ function frame(now){
   // ambient
   lanterns.forEach((l,i)=>{l.scale.setScalar(1+Math.sin(t*2+i)*0.15);});
   brew.material.color.setHSL(0.72,0.55,0.72+Math.sin(t*3)*0.05);
+  fire.scale.set(1+Math.sin(t*17)*0.12,1+Math.sin(t*23)*0.2,1+Math.sin(t*19)*0.12);
+  smokes.forEach((m,i)=>{const k=((t*0.35+i/smokes.length)%1);m.position.set(1.4+Math.sin(t+i)*0.3,6.5+k*3.5,-0.6);m.scale.setScalar(0.6+k*1.4);});smokeM.opacity=0.55;
   const drift=m=>{const u=m.userData;m.position.x=u.bx+Math.sin(t*0.4+u.ph)*1.5;m.position.z=u.bz+Math.cos(t*0.3+u.ph)*1.2;};
   coastMist.arr.forEach(drift);
   if(forestMist.mat.opacity>0.001)forestMist.arr.forEach(drift);
@@ -536,7 +576,7 @@ function frame(now){
     t.outlines.forEach(o=>{o.visible=!fading;});
     if(t.state==='up'){if(t.t>0){t.t-=dt;t.g.rotation.z=Math.sin(t.t*60)*0.06*(t.t/0.32);}else t.g.rotation.z=0;}
     else if(t.state==='falling'){t.t+=dt;const k=Math.min(1,t.t/0.7);t.g.rotation.z=k*k*1.45;if(k>=1){t.state='stump';t.t=0;t.g.rotation.z=0;t.crown.forEach(c=>c.visible=false);t.trunk.scale.y=0.35;t.trunk.position.y=0.28;t.col.r=0.42*t.s;}}
-    else if(t.state==='stump'){t.t+=dt;if(t.t>45){t.state='up';t.hits=0;t.crown.forEach(c=>{c.visible=true;});t.trunk.scale.y=1;t.trunk.position.y=0.8;t.col.r=0.75*t.s;}}
+    else if(t.state==='stump'){t.t+=dt;if(t.t>45){t.state='up';t.hits=0;t.t=0;t.g.rotation.z=0;t.crown.forEach(c=>{c.visible=true;});t.trunk.scale.y=1;t.trunk.position.y=0.8;t.col.r=0.75*t.s;}}
   });
   rocks.forEach(r=>{
     if(r.t>0){r.t-=dt;const k=r.t/0.25;r.m.position.x=r.x+Math.sin(r.t*90)*0.08*k;}else r.m.position.x=r.x;
@@ -555,12 +595,14 @@ function frame(now){
   let bt=null,btd=1e9;trees.forEach(t=>{if(t.state!=='up'||(t.forest&&!purified))return;const d=Math.hypot(t.x-p.x,t.z-p.z)-t.col.r;if(d<1.3&&d<btd){btd=d;bt=t;}});
   let br=null,brd=1e9;rocks.forEach(r=>{if(r.state!=='full')return;const d=Math.hypot(r.x-p.x,r.z-p.z)-r.r;if(d<1.3&&d<brd){brd=d;br=r;}});
   if(best)ctx={a:'pick',m:best,label:'採集'};
-  else if(br&&(!bt||brd<btd))ctx=!tools.pick?{a:'need',label:'敲石頭',msg:'需要石鎬才能敲石頭。打開「合成」做一把吧。'}:stamina<3?{a:'need',label:'敲石頭',msg:'太累了。吃個紅帽蘑菇補體力吧。'}:{a:'mine',r:br,label:'敲石頭'};
-  else if(bt)ctx=!tools.axe?{a:'need',label:'砍樹',msg:'需要石斧才能砍樹。打開「合成」做一把吧。'}:stamina<3?{a:'need',label:'砍樹',msg:'太累了。吃個紅帽蘑菇補體力吧。'}:{a:'chop',t:bt,label:'砍樹'};
-  else if(!purified&&purifyT<0&&p.z<-17)ctx=inv.potion>0?{a:'purify',label:'淨霧'}:{a:'need',label:'淨霧',msg:'還沒有淨霧藥劑。配方：紅帽蘑菇 ×3 ＋ 藍水晶 ×1，到「合成」製作。'};
+  else if(br&&(!bt||brd<btd))ctx=!tools.pick?{a:'need',label:'敲石頭',msg:'需要石鎬才能敲石頭。到工坊的工作台做一把吧。'}:stamina<3?{a:'need',label:'敲石頭',msg:'太累了。吃個紅帽蘑菇補體力吧。'}:{a:'mine',r:br,label:'敲石頭'};
+  else if(bt)ctx=!tools.axe?{a:'need',label:'砍樹',msg:'需要石斧才能砍樹。到工坊的工作台做一把吧。'}:stamina<3?{a:'need',label:'砍樹',msg:'太累了。吃個紅帽蘑菇補體力吧。'}:{a:'chop',t:bt,label:'砍樹'};
+  else if(!purified&&purifyT<0&&p.z<-17)ctx=inv.potion>0?{a:'purify',label:'淨霧'}:{a:'need',label:'淨霧',msg:'還沒有淨霧藥劑。配方：紅帽蘑菇 ×3 ＋ 藍水晶 ×1，到工坊的大釜製作。'};
   else if(purified&&Math.hypot(p.x-spirit.position.x,p.z-spirit.position.z)<4)ctx={a:'spirit',label:'對話'};
-  else if(Math.hypot(p.x,p.z+13)<6)ctx={a:'tree',label:'觀察'};
-  else ctx={a:'none',label:'互動'};
+  else{const st=STATIONS.find(o=>Math.hypot(o.x-p.x,o.z-p.z)-o.r<1.6);
+    if(st)ctx={a:'station',s:st.id,label:st.name};
+    else if(Math.hypot(p.x,p.z+13)<6)ctx={a:'tree',label:'觀察'};
+    else ctx={a:'none',label:'互動'};}
   if(actBtn.dataset.a!==ctx.a||actBtn.textContent!==ctx.label){actBtn.dataset.a=ctx.a;actBtn.textContent=ctx.label;}
   if(usedT>0){usedT-=dt;if(usedT<=0){usedSlot='';hotbarUI();}}
 
@@ -570,7 +612,7 @@ function frame(now){
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-setTimeout(()=>toast('拖曳左下搖桿移動。先打開「合成」做石斧和石鎬，採集材料後鍊出淨霧藥劑，淨化北邊的灰霧。',6000),900);
+setTimeout(()=>toast('拖曳左下搖桿移動。先到右邊工坊的工作台做石斧和石鎬，採集材料後到大釜鍊淨霧藥劑，淨化北邊的灰霧。',6500),900);
 })();
 </script>
 
