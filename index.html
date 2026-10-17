@@ -353,29 +353,74 @@ function relocateTree(t){const p=findSpot(()=>t.forest?{x:(Math.random()-0.5)*80
   t.trunk.scale.y=1;t.trunk.position.y=0.8;t.col.x=p.x;t.col.z=p.z;t.col.r=0.75*t.s;t.dot.x=p.x;t.dot.z=p.z;}
 function nodeActive(n){if(n.taken)return false;if(n.kind==='moon')return isNight();if(n.kind==='dew')return isDawn();if(n.kind==='flax')return purified;return true;}
 // ===== mine cave (礦洞, trial) =====
-const CX=1200,CZ=600,CHF=7;const CAVE_E={x:-42,z:8};
-let inCave=false;const caveCols=[];const caveOres=[];
+// 礦洞兩層：B0 洞口一層（兩個分岔＋北側梯子），B1 地底一層（水晶礦）。每層有自己的幾何與碰撞，切換時只顯示當層。
+const CHF=7;const CAVE_E={x:-42,z:8};
+let inCave=false;let caveLevel=0;let caveCols=[];const caveOres=[];
+function rtex(base,dark,seed,rx,ry){const hx=n=>typeof n==='number'?'#'+n.toString(16).padStart(6,'0'):n;base=hx(base);dark=hx(dark);const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');
+  let s=((seed*9301+49297)%233280)||1;const r=()=>{s=(s*16807)%2147483647;return s/2147483647;};
+  g.fillStyle=base;g.fillRect(0,0,128,128);
+  for(let i=0;i<60;i++){g.fillStyle=dark;g.globalAlpha=0.12+r()*0.22;g.beginPath();g.ellipse(r()*128,r()*128,3+r()*12,2+r()*8,r()*3,0,Math.PI*2);g.fill();}
+  g.globalAlpha=0.9;g.strokeStyle=dark;g.lineWidth=2;
+  for(let i=0;i<7;i++){g.beginPath();let x=r()*128,y=r()*128;g.moveTo(x,y);for(let k=0;k<4;k++){x+=(r()-0.5)*34;y+=(r()-0.5)*34;g.lineTo(x,y);}g.stroke();}
+  g.globalAlpha=1;
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rx,ry);return t;}
+function caveMat(c,tex){return bend(new THREE.MeshToonMaterial({color:c,map:tex||null,gradientMap:grad}));}
+// wall segment in level-local coords; visual box + thin collider chain along the centre line
+function caveWall(lv,x1,z1,x2,z2){const X1=lv.ox+x1,Z1=lv.oz+z1,X2=lv.ox+x2,Z2=lv.oz+z2;
+  const len=Math.hypot(X2-X1,Z2-Z1),ang=Math.atan2(Z2-Z1,X2-X1);
+  const tex=rtex(lv.wall,0x2A211B,lv.id*100+Math.round(X1*3+Z1*7+X2*5+Z2*11),Math.max(1,len/2.5),1.2);
+  const m=part(new THREE.BoxGeometry(len+0.4,4.2,1.2),caveMat(0xFFFFFF,tex),(X1+X2)/2,2.1,(Z1+Z2)/2,lv.group,0.06);m.rotation.y=-ang;
+  const n=Math.max(1,Math.ceil(len/0.4));for(let i=0;i<=n;i++){const t=i/n;lv.cols.push({x:X1+(X2-X1)*t,z:Z1+(Z2-Z1)*t,r:0.15});}}
+function caveOre(lv,d){d.p.forEach(([x,z])=>{const wx=lv.ox+x,wz=lv.oz+z;
+  const parts=[part(new THREE.DodecahedronGeometry(0.9,0),toon(0x6E6A66),wx,0.6,wz,lv.group,0.08),
+    part(new THREE.DodecahedronGeometry(0.4,0),toon(d.bit),wx+0.45,1.0,wz+0.25,lv.group,0.1),
+    part(new THREE.OctahedronGeometry(0.28,0),toon(d.bit),wx-0.5,0.6,wz-0.35,lv.group,0.1)];
+  const col={x:wx,z:wz,r:0.95};lv.cols.push(col);
+  caveOres.push({lv:lv.id,k:d.k,need:d.need,x:wx,z:wz,hits:0,state:'full',parts,col});});}
+function caveLamp(lv,x,z){part(new THREE.CylinderGeometry(0.02,0.02,1.2,4),toon(0x3B2A1E),lv.ox+x,3.5,lv.oz+z,lv.group,0);
+  part(new THREE.SphereGeometry(0.24,8,6),new THREE.MeshBasicMaterial({color:0xFFD27A}),lv.ox+x,2.7,lv.oz+z,lv.group,0);}
+function caveLadder(lv){const lx=lv.ox+lv.ladder.x,lz=lv.oz+lv.ladder.z-1.0;const wood=toon(0x6B4A2E);
+  [-0.45,0.45].forEach(dx=>part(new THREE.BoxGeometry(0.14,3.6,0.14),wood,lx+dx,1.8,lz,lv.group,0.08));
+  for(let i=0;i<7;i++)part(new THREE.BoxGeometry(1.0,0.12,0.12),wood,lx,0.45+i*0.5,lz,lv.group,0.08);
+  const hole=new THREE.Mesh(new THREE.CircleGeometry(1.1,14),new THREE.MeshBasicMaterial({color:0x0E0A08}));
+  hole.rotation.x=-Math.PI/2;hole.position.set(lx,0.03,lv.oz+lv.ladder.z);lv.group.add(hole);}
+const caveLv=[
+ {id:0,ox:1200,oz:600,bg:0x2E2622,floor:0x4E3F31,wall:0x7A6A5A,exit:{x:0,z:5.8},
+  walls:[[-7,-7,7,-7],[-7,-7,-7,7],[7,-7,7,7],[-7,7,-1.5,7],[1.5,7,7,7],
+    [-7,-3.2,-1.6,-3.2],[-7,0.2,-1.6,0.2],[-1.6,-3.2,-1.6,0.2],
+    [-7,3.2,-1.6,3.2],[-1.6,3.2,-1.6,7],
+    [1.6,-0.2,7,-0.2],[1.6,-0.2,1.6,7],[1.6,-3.2,7,-3.2]],
+  ores:[{k:'copper',need:4,bit:0xC8762E,p:[[-6.0,1.7],[-5.6,-5.4]]},
+    {k:'gold',need:6,bit:0xF7C948,p:[[5.9,-1.7],[4.5,-5.6]]},
+    {k:'iron',need:5,bit:0xA9B2BE,p:[[-3.0,-6.0],[3.0,-6.0]]}],
+  lanterns:[[0,-1.2],[0,4.6],[-4.2,-4.4],[4.2,-4.4]],
+  ladder:{x:0,z:-5.0,to:1,label:'下梯'}},
+ {id:1,ox:1200,oz:780,bg:0x1B222C,floor:0x3A4450,wall:0x56606E,exit:null,
+  walls:[[-7,-7,7,-7],[-7,-7,-7,7],[7,-7,7,7],[-7,7,7,7],
+    [-2,-2.8,-2,5],[2,-2.8,2,5],[-2,5,2,5],[-2,-2.8,2,-2.8]],
+  ores:[{k:'crys',need:5,bit:0x7FD8F0,p:[[-5.6,5.6],[-5.6,-1.6]]},
+    {k:'copper',need:4,bit:0xC8762E,p:[[5.6,5.6],[5.6,-1.6]]},
+    {k:'iron',need:5,bit:0xA9B2BE,p:[[-3.0,-5.8],[3.0,-5.8]]}],
+  lanterns:[[-4.5,-4.5],[4.5,-4.5],[-4.5,1.0],[4.5,1.0]],
+  ladder:{x:0,z:-5.0,to:0,label:'上梯'}}];
+function buildCaveLevel(lv){lv.group=new THREE.Group();lv.group.visible=false;scene.add(lv.group);lv.cols=[];
+  const fl=new THREE.Mesh(new THREE.PlaneGeometry(CHF*2,CHF*2),caveMat(0xFFFFFF,rtex(lv.floor,0x1F1812,lv.id*31+5,3,3)));
+  fl.rotation.x=-Math.PI/2;fl.position.set(lv.ox,0.01,lv.oz);lv.group.add(fl);
+  lv.walls.forEach(w=>caveWall(lv,w[0],w[1],w[2],w[3]));
+  lv.ores.forEach(d=>caveOre(lv,d));
+  lv.lanterns.forEach(([x,z])=>caveLamp(lv,x,z));
+  caveLadder(lv);
+  if(lv.exit){const wood=toon(0x5C3F2A);
+    [-1.5,1.5].forEach(x=>part(new THREE.BoxGeometry(0.8,4.6,0.8),wood,lv.ox+x,2.3,lv.oz+7,lv.group,0.06));
+    part(new THREE.BoxGeometry(3.8,0.6,0.8),wood,lv.ox,4.4,lv.oz+7,lv.group,0.06);
+    const ex=new THREE.Mesh(new THREE.PlaneGeometry(2,1),toon(0x7FC8E8));ex.rotation.x=-Math.PI/2;ex.position.set(lv.ox+lv.exit.x,0.02,lv.oz+lv.exit.z);lv.group.add(ex);}
+}
+// mound + entrance (outside the cave floor)
 {const mound=part(new THREE.DodecahedronGeometry(3.2,1),toon(0x8C877F),CAVE_E.x,1.0,CAVE_E.z,null,0.08);mound.scale.set(1.2,0.75,1.0);
  const mouth=new THREE.Mesh(new THREE.CircleGeometry(1.1,16),new THREE.MeshBasicMaterial({color:0x2A2328}));mouth.position.set(CAVE_E.x,0.75,CAVE_E.z+3.25);mouth.scale.set(0.9,1.35,1);scene.add(mouth);
  colliders.push({x:CAVE_E.x,z:CAVE_E.z,r:3.5});}
-{const fl=new THREE.Mesh(new THREE.PlaneGeometry(CHF*2,CHF*2),toon(0x5A4636));fl.rotation.x=-Math.PI/2;fl.position.set(CX,0.01,CZ);scene.add(fl);
- const wm=toon(0x6E5A48);
- part(new THREE.BoxGeometry(CHF*2+0.6,4,0.6),wm,CX,2,CZ-CHF-0.3,null,0.06);
- part(new THREE.BoxGeometry(0.6,4,CHF*2),wm,CX-CHF-0.3,2,CZ,null,0.06);
- part(new THREE.BoxGeometry(0.6,4,CHF*2),wm,CX+CHF+0.3,2,CZ,null,0.06);
- part(new THREE.BoxGeometry(CHF-1.5,4,0.6),wm,CX-(CHF+1.5)/2,2,CZ+CHF+0.3,null,0.06);
- part(new THREE.BoxGeometry(CHF-1.5,4,0.6),wm,CX+(CHF+1.5)/2,2,CZ+CHF+0.3,null,0.06);
- const ex=new THREE.Mesh(new THREE.PlaneGeometry(2,1),toon(0x7FC8E8));ex.rotation.x=-Math.PI/2;ex.position.set(CX,0.02,CZ+CHF-1.2);scene.add(ex);
- const ORE=[
-   {k:'copper',need:4,bit:0xC8762E,p:[[-4,-3],[-1,-4.5],[3.5,-4],[5,-1],[-5,1],[2,2]]},
-   {k:'gold',need:6,bit:0xF7C948,p:[[-2.5,-0.5],[0.5,-2.8],[4,3]]},
-   {k:'iron',need:5,bit:0xA9B2BE,p:[[-4.5,3.5],[1,4.5],[-1.5,-1.2],[4.5,1.5]]}];
- ORE.forEach(d=>d.p.forEach(([x,z])=>{const wx=CX+x,wz=CZ+z;
-   const parts=[part(new THREE.DodecahedronGeometry(0.9,0),toon(0x6E6A66),wx,0.6,wz,null,0.08),
-     part(new THREE.DodecahedronGeometry(0.4,0),toon(d.bit),wx+0.45,1.0,wz+0.25,null,0.1)];
-   const col={x:wx,z:wz,r:0.95};caveCols.push(col);
-   caveOres.push({k:d.k,need:d.need,x:wx,z:wz,hits:0,state:'full',parts,col});}));
-}
+caveLv.forEach(buildCaveLevel);
+function setCaveLevel(n){caveLevel=n;caveCols=caveLv[n].cols;caveLv.forEach((l,i)=>{l.group.visible=inCave&&i===n;});}
 // flowers
 const fG=new THREE.SphereGeometry(0.18,6,5);
 for(let i=0;i<60;i++){const a=rnd()*Math.PI*2,r=4+rnd()*18;const x=Math.cos(a)*r,z=Math.sin(a)*r;if(inForest(x,z))continue;const m=new THREE.Mesh(fG,toon([0xF4A6C0,0xF7D154,0xFFFFFF][i%3]));m.position.set(x,0.18,z);scene.add(m);}
@@ -670,6 +715,7 @@ function doAction(){
   if(a==='stand'){const r=player.rotation.y;sitting=null;player.position.set(player.position.x+Math.sin(r)*1.1,0,player.position.z+Math.cos(r)*1.1);return;}
   if(a==='cavein'){enterCave();return;}
   if(a==='caveout'){exitCave();return;}
+  if(a==='caveladder'){const to=caveLevel===0?1:0;caveGoTo(to,0,-3.8,Math.PI);toast(to?'爬下梯子，來到地底一層。':'爬上梯子，回到礦洞第一層。',1800);return;}
   if(a==='cavemine'){const o=ctx.o;if(!fits({k:o.k,n:1})){toast(FULL,2000);return;}face(o.x,o.z);useTool('pick');o.hits++;inv[o.k]=(inv[o.k]||0)+1;hotbarUI();
     if(o.hits>=o.need){o.state='gone';o.parts.forEach(m=>{m.visible=false;});o.col.r=0;o.col.x=-999;o.col.z=-999;toast(NAME[o.k]+' +1。這條礦脈採完了，明天會重新長出來。',1900);}
     else toast(NAME[o.k]+' +1（還能敲 '+(o.need-o.hits)+' 下）',1100);return;}
@@ -816,9 +862,12 @@ function renderSleep(){const h=hourNow();
   sheet.innerHTML='<div class="shead"><h2>要睡到幾點？</h2><button class="pbtn" type="button" data-x="close">不睡了</button></div>'+
   '<div class="note">現在 '+String(Math.floor(h)).padStart(2,'0')+':'+String(Math.floor(gameMin%60)).padStart(2,'0')+'。睡覺會回滿體力。過了早上 5 點就是新的一天：每棵樹又能砍出 3 塊木材、石頭恢復、蘑菇長回來。</div>'+
   opts.map(([hh,l,n])=>'<button class="pbtn opt" type="button" data-sleep="'+hh+'"><span>'+l+'</span><span class="note">'+n+'</span></button>').join('');}
-function enterCave(){inCave=true;document.body.classList.add('inside');player.position.set(CX,0,CZ+CHF-2.2);player.rotation.y=Math.PI;camPos.set(CX,12,CZ+CHF+6);curveU.value=0;scene.background=new THREE.Color(0x2E2622);scene.fog=null;
-  toast('礦洞裡很暗。用鎬敲礦脈，可以採到銅礦、金砂和鐵礦。',3000);saveGame();}
-function exitCave(){inCave=false;document.body.classList.remove('inside');player.position.set(CAVE_E.x,0,CAVE_E.z+4.3);player.rotation.y=0;camPos.set(CAVE_E.x,21,CAVE_E.z+25);curveU.value=curveOn?CURVE:0;scene.background=new THREE.Color(SKY);scene.fog=new THREE.Fog(SKY,95,200);saveGame();}
+function caveGoTo(n,sx,sz,rot){const L=caveLv[n];setCaveLevel(n);
+  player.position.set(L.ox+sx,0,L.oz+sz);player.rotation.y=rot;camPos.set(L.ox+sx,12,L.oz+sz+11);curveU.value=0;
+  scene.background=new THREE.Color(L.bg);scene.fog=null;saveGame();}
+function enterCave(){inCave=true;document.body.classList.add('inside');caveGoTo(0,0,4.8,Math.PI);
+  toast('礦洞裡很暗。用鎬敲礦脈，可以採到銅礦、金砂和鐵礦。',3000);}
+function exitCave(){inCave=false;caveLv.forEach(l=>{l.group.visible=false;});caveLevel=0;document.body.classList.remove('inside');player.position.set(CAVE_E.x,0,CAVE_E.z+4.3);player.rotation.y=0;camPos.set(CAVE_E.x,21,CAVE_E.z+25);curveU.value=curveOn?CURVE:0;scene.background=new THREE.Color(SKY);scene.fog=new THREE.Fog(SKY,95,200);saveGame();}
 function newDay(){caveOres.forEach(o=>{o.state='full';o.hits=0;o.parts.forEach(m=>{m.visible=true;});o.col.x=o.x;o.col.z=o.z;o.col.r=0.95;});trees.forEach(t=>{t.wood=3;t.branches=4;t.stumpHits=0;if(t.state==='gone'){relocateTree(t);return;}if(t.state!=='up'){t.state='up';t.hits=0;t.t=0;t.g.rotation.z=0;t.crown.forEach(c=>{c.visible=true;});t.cut.visible=false;t.trunk.scale.y=1;t.trunk.position.y=0.8;t.col.r=0.75*t.s;}});
   rocks.forEach(r=>{if(r.state==='gone'){relocateRock(r);return;}r.state='full';r.hits=0;r.regrow=0;r.m.scale.set(r.sc[0],r.sc[1],r.sc[2]);r.mat.color.setHex(0xA9A39A);});
   mushes.forEach(m=>{if(!m.alive){m.alive=true;scene.add(m.g);}});nodes.forEach(n=>{if(n.kind!=='stone')n.taken=false;});resetStones(10);}
@@ -853,7 +902,7 @@ function frame(now){
     const sp=7.5*Math.min(1,ml);mx/=ml;mz/=ml;
     let nx=p.x+mx*sp*dt,nz=p.z+mz*sp*dt;
     let msg='';
-    if(inCave){nx=Math.max(CX-CHF+0.5,Math.min(CX+CHF-0.5,nx));nz=Math.max(CZ-CHF+0.5,Math.min(CZ+CHF-0.5,nz));}
+    if(inCave){const L=caveLv[caveLevel];nx=Math.max(L.ox-CHF+0.5,Math.min(L.ox+CHF-0.5,nx));nz=Math.max(L.oz-CHF+0.5,Math.min(L.oz+CHF-0.5,nz));}
     else if(inside){nx=Math.max(RX-HALF+0.5,Math.min(RX+HALF-0.5,nx));nz=Math.max(RZ-HALF+0.5,Math.min(RZ+HALF-0.4,nz));}
     else{
     if(!purified&&inForest(nx,nz)){nz=-21;msg='灰霧太濃了，進不去。要用淨霧藥劑才行。';}
@@ -931,7 +980,7 @@ function frame(now){
 
   // region label
   let reg='燈芯島 · 小谷村';
-  if(inCave)reg='礦洞';
+  if(inCave)reg=caveLevel?'礦洞・地底一層':'礦洞';
   else if(inside)reg='工坊 · 室內';
   else if(p.z<-17)reg=purified?'火苔之森':'火苔之森（灰霧）';
   else if(p.x>22)reg='潮汐海岸（灰霧）';
@@ -939,8 +988,9 @@ function frame(now){
   if(reg!==lastRegion){$('region').textContent=reg;lastRegion=reg;}
 
   // context action
-  if(inCave){let no=null,nd=1e9;caveOres.forEach(o=>{if(o.state!=='full')return;const d=Math.hypot(o.x-p.x,o.z-p.z)-0.9;if(d<1.5&&d<nd){nd=d;no=o;}});
-    if(Math.hypot(p.x-CX,p.z-(CZ+CHF-1.2))<1.4)ctx={a:'caveout',label:'出洞'};
+  if(inCave){const L=caveLv[caveLevel];let no=null,nd=1e9;caveOres.forEach(o=>{if(o.lv!==caveLevel||o.state!=='full')return;const d=Math.hypot(o.x-p.x,o.z-p.z)-0.9;if(d<1.5&&d<nd){nd=d;no=o;}});
+    if(L.exit&&Math.hypot(p.x-(L.ox+L.exit.x),p.z-(L.oz+L.exit.z))<1.4)ctx={a:'caveout',label:'出洞'};
+    else if(Math.hypot(p.x-(L.ox+L.ladder.x),p.z-(L.oz+L.ladder.z))<1.6)ctx={a:'caveladder',label:L.ladder.label};
     else if(no)ctx=!T('pick')?{a:'need',label:'敲礦',msg:'需要鎬才能敲礦。'}:stamina<3?{a:'need',label:'敲礦',msg:'太累了。吃個紅帽蘑菇補體力吧。'}:{a:'cavemine',o:no,label:'敲礦'};
     else ctx={a:'none',label:'互動'};}
   else if(inside){let near=null,nd=1e9;items.forEach(it=>{if(!['f_bed','f_chest','f_chair'].includes(it.id))return;it.cols.forEach(c=>{const d=Math.hypot(c.x-p.x,c.z-p.z);if(d<nd){nd=d;near={it,c};}});});
