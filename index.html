@@ -352,6 +352,30 @@ function relocateTree(t){const p=findSpot(()=>t.forest?{x:(Math.random()-0.5)*80
   t.x=p.x;t.z=p.z;t.g.position.set(p.x,0,p.z);t.g.visible=true;t.g.rotation.z=0;t.state='up';t.hits=0;t.t=0;t.crown.forEach(c=>c.visible=true);t.cut.visible=false;
   t.trunk.scale.y=1;t.trunk.position.y=0.8;t.col.x=p.x;t.col.z=p.z;t.col.r=0.75*t.s;t.dot.x=p.x;t.dot.z=p.z;}
 function nodeActive(n){if(n.taken)return false;if(n.kind==='moon')return isNight();if(n.kind==='dew')return isDawn();if(n.kind==='flax')return purified;return true;}
+// ===== mine cave (礦洞, trial) =====
+const CX=1200,CZ=600,CHF=7;const CAVE_E={x:-42,z:8};
+let inCave=false;const caveCols=[];const caveOres=[];
+{const mound=part(new THREE.DodecahedronGeometry(3.2,1),toon(0x8C877F),CAVE_E.x,1.0,CAVE_E.z,null,0.08);mound.scale.set(1.2,0.75,1.0);
+ const mouth=new THREE.Mesh(new THREE.CircleGeometry(1.1,16),new THREE.MeshBasicMaterial({color:0x2A2328}));mouth.position.set(CAVE_E.x,0.75,CAVE_E.z+3.25);mouth.scale.set(0.9,1.35,1);scene.add(mouth);
+ colliders.push({x:CAVE_E.x,z:CAVE_E.z,r:3.5});}
+{const fl=new THREE.Mesh(new THREE.PlaneGeometry(CHF*2,CHF*2),toon(0x5A4636));fl.rotation.x=-Math.PI/2;fl.position.set(CX,0.01,CZ);scene.add(fl);
+ const wm=toon(0x6E5A48);
+ part(new THREE.BoxGeometry(CHF*2+0.6,4,0.6),wm,CX,2,CZ-CHF-0.3,null,0.06);
+ part(new THREE.BoxGeometry(0.6,4,CHF*2),wm,CX-CHF-0.3,2,CZ,null,0.06);
+ part(new THREE.BoxGeometry(0.6,4,CHF*2),wm,CX+CHF+0.3,2,CZ,null,0.06);
+ part(new THREE.BoxGeometry(CHF-1.5,4,0.6),wm,CX-(CHF+1.5)/2,2,CZ+CHF+0.3,null,0.06);
+ part(new THREE.BoxGeometry(CHF-1.5,4,0.6),wm,CX+(CHF+1.5)/2,2,CZ+CHF+0.3,null,0.06);
+ const ex=new THREE.Mesh(new THREE.PlaneGeometry(2,1),toon(0x7FC8E8));ex.rotation.x=-Math.PI/2;ex.position.set(CX,0.02,CZ+CHF-1.2);scene.add(ex);
+ const ORE=[
+   {k:'copper',need:4,bit:0xC8762E,p:[[-4,-3],[-1,-4.5],[3.5,-4],[5,-1],[-5,1],[2,2]]},
+   {k:'gold',need:6,bit:0xF7C948,p:[[-2.5,-0.5],[0.5,-2.8],[4,3]]},
+   {k:'iron',need:5,bit:0xA9B2BE,p:[[-4.5,3.5],[1,4.5],[-1.5,-1.2],[4.5,1.5]]}];
+ ORE.forEach(d=>d.p.forEach(([x,z])=>{const wx=CX+x,wz=CZ+z;
+   const parts=[part(new THREE.DodecahedronGeometry(0.9,0),toon(0x6E6A66),wx,0.6,wz,null,0.08),
+     part(new THREE.DodecahedronGeometry(0.4,0),toon(d.bit),wx+0.45,1.0,wz+0.25,null,0.1)];
+   const col={x:wx,z:wz,r:0.95};caveCols.push(col);
+   caveOres.push({k:d.k,need:d.need,x:wx,z:wz,hits:0,state:'full',parts,col});}));
+}
 // flowers
 const fG=new THREE.SphereGeometry(0.18,6,5);
 for(let i=0;i<60;i++){const a=rnd()*Math.PI*2,r=4+rnd()*18;const x=Math.cos(a)*r,z=Math.sin(a)*r;if(inForest(x,z))continue;const m=new THREE.Mesh(fG,toon([0xF4A6C0,0xF7D154,0xFFFFFF][i%3]));m.position.set(x,0.18,z);scene.add(m);}
@@ -455,13 +479,15 @@ const ICON={
  ring:'<circle cx="24" cy="28" r="12" fill="none" stroke="#E9C46A" stroke-width="5"/><path d="M24 8 l5 7 h-10 Z" fill="#7FC8E8"/>',
  chest:'<path d="M6 20 h36 v20 h-36 Z" fill="#B07A4A"/><path d="M6 14 h36 v8 h-36 Z" fill="#D9A66E"/><path d="M21 22 h6 v6 h-6 Z" fill="#F7D154"/>',
  bug:'<ellipse cx="24" cy="28" rx="12" ry="14" fill="#6E8B3D"/><ellipse cx="24" cy="16" rx="7" ry="5" fill="#8FAE55"/><path d="M24 14 V42 M14 24 H34 M15 32 L8 38 M33 32 L40 38 M15 22 L8 18 M33 22 L40 18" stroke="#3B2A1E" stroke-width="2.5"/>',
- honey:'<path d="M14 14 h20 v4 h-20 Z" fill="#8A5A36"/><path d="M12 18 h24 v22 a6 6 0 0 1 -6 6 h-12 a6 6 0 0 1 -6 -6 Z" fill="#F2B632"/><path d="M14 28 h20 v4 h-20 Z" fill="#FFE08A"/>'
+ honey:'<path d="M14 14 h20 v4 h-20 Z" fill="#8A5A36"/><path d="M12 18 h24 v22 a6 6 0 0 1 -6 6 h-12 a6 6 0 0 1 -6 -6 Z" fill="#F2B632"/><path d="M14 28 h20 v4 h-20 Z" fill="#FFE08A"/>',
+ copper:'<path d="M6 36 L12 20 L26 16 L40 24 L36 38 L16 40 Z" fill="#6E6A66"/><path d="M14 30 L20 24 L24 30 Z M26 28 L34 26 L32 34 Z" fill="#C8762E"/>',
+ gold:'<path d="M6 36 L12 20 L26 16 L40 24 L36 38 L16 40 Z" fill="#6E6A66"/><path d="M14 30 L20 24 L24 30 Z M26 28 L34 26 L32 34 Z" fill="#F7C948"/>'
 };
-const NAME={branch:'樹枝',clay:'黏土',iron:'鐵礦',moon:'月光蘑菇',dew:'晨露',cloth:'粗麻布',bag:'背包擴充',f_chair:'木椅',f_table:'木桌',f_bed:'小木床',f_plant:'盆栽',f_chest:'收納箱',stam:'體力藥水',flax:'麻草',mush:'紅帽蘑菇',wood:'木材',stone:'石頭',crys:'藍水晶',potion:'淨霧藥劑',axe:'石斧',pick:'石鎬',kettle:'晨露水壺',sand:'星砂瓶',earring:'晨露耳墜',necklace:'月光項鍊',hairband:'麻草髮帶',ring:'時空戒指',chest:'寶箱',bug:'蟲子',honey:'蜂蜜'};
-const DESC={branch:'搖樹時偶爾掉下來的樹枝，做簡易工具的材料。',clay:'敲石頭有機會掉出來，可以做陶盆。',iron:'敲石頭有機會掉出來，可以做鐵製工具。',moon:'只在夜裡（20:00–05:00）發光的蘑菇，高級藥水的材料。',dew:'清晨（05:00–08:00）凝在花上的露水，鍊金的溶劑。',cloth:'織布機織出來的布，可以做背包和套裝。',flax:'火苔之森裡的植物，可以在織布機織成布。',f_chair:'樸素的木椅。進屋後在布置模式擺放。',f_table:'四方木桌。進屋後在布置模式擺放。',f_bed:'小小的單人床。進屋後在布置模式擺放。',f_plant:'種著小樹的陶盆，讓房間多點綠意。',f_chest:'之後可以存放背包放不下的東西（示範版只能擺放）。',stam:'釜熬的提神藥水，喝下回復 40 點體力。',flax:'火苔之森裡的植物，可以在織布機織成布。',mush:'長在樹蔭下的蘑菇，隔天會重新長出來。可以直接吃，回復 15 點體力。',wood:'砍樹得到的木材，做工具和家具的基本材料。',stone:'敲石頭得到的石頭，做工具的材料。',crys:'敲石頭時偶爾會掉出來的藍水晶，鍊金的重要材料。',potion:'師父筆記裡的配方。灑向灰霧，可以淨化被蝕污染的霧。',axe:'砍樹取得木材。簡易斧砍不倒樹；鐵斧砍 3 下會把樹砍倒。每砍一下耐久 -1。',pick:'敲石頭取得石頭、黏土、鐵礦，偶爾有藍水晶。每敲一下耐久 -1。',kettle:'用黏土和晨露做成的小水壺。之後農地上線時可以用來澆水。',sand:'裝著藍色星砂的小瓶子，收藏用。',earring:'晨露凝成的小耳墜。裝備後體力消耗 −10%。',necklace:'藍水晶串成的項鍊。裝備後，夜間採集有機會多得一份。',hairband:'麻草編成的髮帶，外觀飾品，沒有效果。',ring:'大媽媽的光凝成的戒指。裝備後，島上可以製作基本道具。',chest:'裝著金幣的木箱。在背包裡按「開啟寶箱」，有機會開出稀有材料。',bug:'搖樹和敲石頭時偶爾會掉下來的小蟲。可以釣魚或當作收藏（之後用途待定）。',honey:'搖樹時偶爾會掉下來的蜂蜜，甜甜的，可以做成體力藥水的材料（之後用途待定）。'};
+const NAME={branch:'樹枝',clay:'黏土',iron:'鐵礦',moon:'月光蘑菇',dew:'晨露',cloth:'粗麻布',bag:'背包擴充',f_chair:'木椅',f_table:'木桌',f_bed:'小木床',f_plant:'盆栽',f_chest:'收納箱',stam:'體力藥水',flax:'麻草',mush:'紅帽蘑菇',wood:'木材',stone:'石頭',crys:'藍水晶',potion:'淨霧藥劑',axe:'石斧',pick:'石鎬',kettle:'晨露水壺',sand:'星砂瓶',earring:'晨露耳墜',necklace:'月光項鍊',hairband:'麻草髮帶',ring:'時空戒指',chest:'寶箱',bug:'蟲子',honey:'蜂蜜',copper:'銅礦',gold:'金砂'};
+const DESC={branch:'搖樹時偶爾掉下來的樹枝，做簡易工具的材料。',clay:'敲石頭有機會掉出來，可以做陶盆。',iron:'敲石頭有機會掉出來，可以做鐵製工具。',moon:'只在夜裡（20:00–05:00）發光的蘑菇，高級藥水的材料。',dew:'清晨（05:00–08:00）凝在花上的露水，鍊金的溶劑。',cloth:'織布機織出來的布，可以做背包和套裝。',flax:'火苔之森裡的植物，可以在織布機織成布。',f_chair:'樸素的木椅。進屋後在布置模式擺放。',f_table:'四方木桌。進屋後在布置模式擺放。',f_bed:'小小的單人床。進屋後在布置模式擺放。',f_plant:'種著小樹的陶盆，讓房間多點綠意。',f_chest:'之後可以存放背包放不下的東西（示範版只能擺放）。',stam:'釜熬的提神藥水，喝下回復 40 點體力。',flax:'火苔之森裡的植物，可以在織布機織成布。',mush:'長在樹蔭下的蘑菇，隔天會重新長出來。可以直接吃，回復 15 點體力。',wood:'砍樹得到的木材，做工具和家具的基本材料。',stone:'敲石頭得到的石頭，做工具的材料。',crys:'敲石頭時偶爾會掉出來的藍水晶，鍊金的重要材料。',potion:'師父筆記裡的配方。灑向灰霧，可以淨化被蝕污染的霧。',axe:'砍樹取得木材。簡易斧砍不倒樹；鐵斧砍 3 下會把樹砍倒。每砍一下耐久 -1。',pick:'敲石頭取得石頭、黏土、鐵礦，偶爾有藍水晶。每敲一下耐久 -1。',kettle:'用黏土和晨露做成的小水壺。之後農地上線時可以用來澆水。',sand:'裝著藍色星砂的小瓶子，收藏用。',earring:'晨露凝成的小耳墜。裝備後體力消耗 −10%。',necklace:'藍水晶串成的項鍊。裝備後，夜間採集有機會多得一份。',hairband:'麻草編成的髮帶，外觀飾品，沒有效果。',ring:'大媽媽的光凝成的戒指。裝備後，島上可以製作基本道具。',chest:'裝著金幣的木箱。在背包裡按「開啟寶箱」，有機會開出稀有材料。',bug:'搖樹和敲石頭時偶爾會掉下來的小蟲。可以釣魚或當作收藏（之後用途待定）。',honey:'搖樹時偶爾會掉下來的蜂蜜，甜甜的，可以做成體力藥水的材料（之後用途待定）。',copper:'礦洞裡的銅礦石，用鎬敲出來。之後可以做飾品（待定）。',gold:'礦洞深處的金砂，用鎬敲出來。之後可以做高級飾品（待定）。'};
 const svg=(k,sz)=>'<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 48 48" aria-hidden="true">'+ICON[k]+'</svg>';
 let inv={mush:0,wood:0,stone:2,crys:0,potion:0,stam:0,branch:0,clay:0,iron:0,flax:0,cloth:0,moon:0,dew:0};let day=1;
-const TRIAL_MATS=['branch','wood','stone','clay','iron','crys','mush','moon','dew','flax','cloth','bug','honey'];
+const TRIAL_MATS=['branch','wood','stone','clay','iron','crys','mush','moon','dew','flax','cloth','bug','honey','copper','gold'];
 const ACC_SLOTS=2;const ACC_EFF={ring:'島上可以製作基本道具（永久）',earring:'體力消耗 −10%',necklace:'夜間採集有 10% 機率多得一份',hairband:'外觀飾品，沒有效果'};
 let accOwned={},accWorn=[],seen=new Set(),tierShownLv=1;
 let coins=0;
@@ -642,6 +668,11 @@ function doAction(){
   if(a==='chest'){face(ctx.x,ctx.z);openPanel('chest');return;}
   if(a==='sit'){sitting=ctx.rot;player.position.set(ctx.x,0.64,ctx.z);player.rotation.y=ctx.rot*Math.PI/2;return;}
   if(a==='stand'){const r=player.rotation.y;sitting=null;player.position.set(player.position.x+Math.sin(r)*1.1,0,player.position.z+Math.cos(r)*1.1);return;}
+  if(a==='cavein'){enterCave();return;}
+  if(a==='caveout'){exitCave();return;}
+  if(a==='cavemine'){const o=ctx.o;if(!fits({k:o.k,n:1})){toast(FULL,2000);return;}face(o.x,o.z);useTool('pick');o.hits++;inv[o.k]=(inv[o.k]||0)+1;hotbarUI();
+    if(o.hits>=o.need){o.state='gone';o.parts.forEach(m=>{m.visible=false;});o.col.r=0;o.col.x=-999;o.col.z=-999;toast(NAME[o.k]+' +1。這條礦脈採完了，明天會重新長出來。',1900);}
+    else toast(NAME[o.k]+' +1（還能敲 '+(o.need-o.hits)+' 下）',1100);return;}
   if(a==='enter'){inside=true;document.body.classList.add('inside');player.position.set(RX,0,RZ+HALF-2.6);player.rotation.y=Math.PI;camPos.set(RX,12,RZ+HALF+9);curveU.value=0;scene.background=new THREE.Color(0x3A302B);scene.fog=null;toast('回到工坊。按「布置」可以擺放家具，走到門口地墊按「出門」。',3000);return;}
   if(a==='exit'){inside=false;document.body.classList.remove('inside');player.position.set(7.3,0,7.1);player.rotation.y=-0.5;camPos.set(7.3,21,25);curveU.value=curveOn?CURVE:0;scene.background=new THREE.Color(SKY);scene.fog=new THREE.Fog(SKY,95,200);return;}
   if(a==='layout'){startLayout();return;}
@@ -705,7 +736,7 @@ function baseScale(){return Math.min(big.clientWidth,big.clientHeight)/(2*(R+8))
 function openMap(){mapOpen=true;mapOv.hidden=false;mapZ=1;mcx=0;mcz=0;jx=jy=0;knob.style.transform='';}
 function closeMap(){mapOpen=false;mapOv.hidden=true;}
 function clampMap(){mapZ=Math.min(5,Math.max(1,mapZ));const lim=R+8;mcx=Math.max(-lim,Math.min(lim,mcx));mcz=Math.max(-lim,Math.min(lim,mcz));}
-mini.addEventListener('click',()=>{if(!inside)openMap();});mini.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openMap();}});
+mini.addEventListener('click',()=>{if(!inside&&!inCave)openMap();});mini.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openMap();}});
 $('mClose').addEventListener('click',closeMap);
 $('mIn').addEventListener('click',()=>{mapZ*=1.4;clampMap();});
 $('mOut').addEventListener('click',()=>{mapZ/=1.4;clampMap();});
@@ -785,7 +816,10 @@ function renderSleep(){const h=hourNow();
   sheet.innerHTML='<div class="shead"><h2>要睡到幾點？</h2><button class="pbtn" type="button" data-x="close">不睡了</button></div>'+
   '<div class="note">現在 '+String(Math.floor(h)).padStart(2,'0')+':'+String(Math.floor(gameMin%60)).padStart(2,'0')+'。睡覺會回滿體力。過了早上 5 點就是新的一天：每棵樹又能砍出 3 塊木材、石頭恢復、蘑菇長回來。</div>'+
   opts.map(([hh,l,n])=>'<button class="pbtn opt" type="button" data-sleep="'+hh+'"><span>'+l+'</span><span class="note">'+n+'</span></button>').join('');}
-function newDay(){trees.forEach(t=>{t.wood=3;t.branches=4;t.stumpHits=0;if(t.state==='gone'){relocateTree(t);return;}if(t.state!=='up'){t.state='up';t.hits=0;t.t=0;t.g.rotation.z=0;t.crown.forEach(c=>{c.visible=true;});t.cut.visible=false;t.trunk.scale.y=1;t.trunk.position.y=0.8;t.col.r=0.75*t.s;}});
+function enterCave(){inCave=true;document.body.classList.add('inside');player.position.set(CX,0,CZ+CHF-2.2);player.rotation.y=Math.PI;camPos.set(CX,12,CZ+CHF+6);curveU.value=0;scene.background=new THREE.Color(0x2E2622);scene.fog=null;
+  toast('礦洞裡很暗。用鎬敲礦脈，可以採到銅礦、金砂和鐵礦。',3000);saveGame();}
+function exitCave(){inCave=false;document.body.classList.remove('inside');player.position.set(CAVE_E.x,0,CAVE_E.z+4.3);player.rotation.y=0;camPos.set(CAVE_E.x,21,CAVE_E.z+25);curveU.value=curveOn?CURVE:0;scene.background=new THREE.Color(SKY);scene.fog=new THREE.Fog(SKY,95,200);saveGame();}
+function newDay(){caveOres.forEach(o=>{o.state='full';o.hits=0;o.parts.forEach(m=>{m.visible=true;});o.col.x=o.x;o.col.z=o.z;o.col.r=0.95;});trees.forEach(t=>{t.wood=3;t.branches=4;t.stumpHits=0;if(t.state==='gone'){relocateTree(t);return;}if(t.state!=='up'){t.state='up';t.hits=0;t.t=0;t.g.rotation.z=0;t.crown.forEach(c=>{c.visible=true;});t.cut.visible=false;t.trunk.scale.y=1;t.trunk.position.y=0.8;t.col.r=0.75*t.s;}});
   rocks.forEach(r=>{if(r.state==='gone'){relocateRock(r);return;}r.state='full';r.hits=0;r.regrow=0;r.m.scale.set(r.sc[0],r.sc[1],r.sc[2]);r.mat.color.setHex(0xA9A39A);});
   mushes.forEach(m=>{if(!m.alive){m.alive=true;scene.add(m.g);}});nodes.forEach(n=>{if(n.kind!=='stone')n.taken=false;});resetStones(10);}
 function sleepUntil(hh){closePanel();const bed=items.find(i=>i.id==='f_bed');const c=centerOf(bed.id,bed.ix,bed.iz,bed.rot);
@@ -819,7 +853,8 @@ function frame(now){
     const sp=7.5*Math.min(1,ml);mx/=ml;mz/=ml;
     let nx=p.x+mx*sp*dt,nz=p.z+mz*sp*dt;
     let msg='';
-    if(inside){nx=Math.max(RX-HALF+0.5,Math.min(RX+HALF-0.5,nx));nz=Math.max(RZ-HALF+0.5,Math.min(RZ+HALF-0.4,nz));}
+    if(inCave){nx=Math.max(CX-CHF+0.5,Math.min(CX+CHF-0.5,nx));nz=Math.max(CZ-CHF+0.5,Math.min(CZ+CHF-0.5,nz));}
+    else if(inside){nx=Math.max(RX-HALF+0.5,Math.min(RX+HALF-0.5,nx));nz=Math.max(RZ-HALF+0.5,Math.min(RZ+HALF-0.4,nz));}
     else{
     if(!purified&&inForest(nx,nz)){nz=-21;msg='灰霧太濃了，進不去。要用淨霧藥劑才行。';}
     if(inCoast(nx,nz)&&nz>-21){nx=28;msg='潮汐海岸的灰霧，要等到第二章才能淨化。';}
@@ -827,8 +862,8 @@ function frame(now){
     if(msg&&now-blockedAt>3000){toast(msg,2400);blockedAt=now;}
     const PR=0.55;let hit=false;
     for(let it=0;it<2;it++){
-      for(const c of (inside?furnCol:colliders)){const dx=nx-c.x,dz=nz-c.z,d=Math.hypot(dx,dz),md=c.r+PR;if(d<md&&d>1e-4){nx=c.x+dx/d*md;nz=c.z+dz/d*md;hit=true;}}
-      if(inside)continue;
+      for(const c of (inCave?caveCols:(inside?furnCol:colliders))){const dx=nx-c.x,dz=nz-c.z,d=Math.hypot(dx,dz),md=c.r+PR;if(d<md&&d>1e-4){nx=c.x+dx/d*md;nz=c.z+dz/d*md;hit=true;}}
+      if(inside||inCave)continue;
       // workshop house: rotated box
       const hr=house.rotation.y,cs=Math.cos(hr),sn=Math.sin(hr);
       const rx=nx-house.position.x,rz=nz-house.position.z;
@@ -846,7 +881,7 @@ function frame(now){
 
   // camera
   if(layout)camPos.lerp(new THREE.Vector3(RX,19,RZ+11),1-Math.pow(0.0005,dt));
-  else if(inside)camPos.lerp(new THREE.Vector3(p.x,p.y+12,p.z+11),1-Math.pow(0.002,dt));
+  else if(inside||inCave)camPos.lerp(new THREE.Vector3(p.x,p.y+12,p.z+11),1-Math.pow(0.002,dt));
   else camPos.lerp(new THREE.Vector3(p.x,p.y+21,p.z+18),1-Math.pow(0.002,dt));
   camera.position.copy(camPos);if(layout)camLook.set(RX,0,RZ+1);else camLook.set(p.x,p.y+1,p.z-(inside?2:3));camera.lookAt(camLook);
 
@@ -875,7 +910,7 @@ function frame(now){
 
   nodes.forEach(n=>{const on=nodeActive(n);if(n.g.visible!==on)n.g.visible=on;if(on&&n.g.userData.spin){n.g.userData.spin.rotation.y=t*2;n.g.userData.spin.position.y=0.5+Math.sin(t*3+n.x)*0.08;}});
   {const h=hourNow();let L;if(h>=7&&h<17)L=1;else if(h>=17&&h<20)L=1-(h-17)/3*0.84;else if(h>=5&&h<7)L=0.16+(h-5)/2*0.84;else L=0.16;
-   if(inside){hemi.intensity=0.65;sun.intensity=0.75;}else{hemi.intensity=0.25+0.4*L;sun.intensity=0.15+0.6*L;
+   if(inside||inCave){hemi.intensity=0.65;sun.intensity=0.75;}else{hemi.intensity=0.25+0.4*L;sun.intensity=0.15+0.6*L;
    const sky=new THREE.Color(SKY).lerp(new THREE.Color(0x1C2546),1-L);if(h>=17&&h<20)sky.lerp(new THREE.Color(0xF2A96B),0.35*Math.sin((h-17)/3*Math.PI));scene.background.copy(sky);if(scene.fog)scene.fog.color.copy(sky);}}
   // trees: occlusion fade + chop animation
   trees.forEach(t=>{
@@ -896,14 +931,19 @@ function frame(now){
 
   // region label
   let reg='燈芯島 · 小谷村';
-  if(inside)reg='工坊 · 室內';
+  if(inCave)reg='礦洞';
+  else if(inside)reg='工坊 · 室內';
   else if(p.z<-17)reg=purified?'火苔之森':'火苔之森（灰霧）';
   else if(p.x>22)reg='潮汐海岸（灰霧）';
   else if(Math.hypot(p.x,p.z+13)<9)reg='燈芯樹';
   if(reg!==lastRegion){$('region').textContent=reg;lastRegion=reg;}
 
   // context action
-  if(inside){let near=null,nd=1e9;items.forEach(it=>{if(!['f_bed','f_chest','f_chair'].includes(it.id))return;it.cols.forEach(c=>{const d=Math.hypot(c.x-p.x,c.z-p.z);if(d<nd){nd=d;near={it,c};}});});
+  if(inCave){let no=null,nd=1e9;caveOres.forEach(o=>{if(o.state!=='full')return;const d=Math.hypot(o.x-p.x,o.z-p.z)-0.9;if(d<1.5&&d<nd){nd=d;no=o;}});
+    if(Math.hypot(p.x-CX,p.z-(CZ+CHF-1.2))<1.4)ctx={a:'caveout',label:'出洞'};
+    else if(no)ctx=!T('pick')?{a:'need',label:'敲礦',msg:'需要鎬才能敲礦。'}:stamina<3?{a:'need',label:'敲礦',msg:'太累了。吃個紅帽蘑菇補體力吧。'}:{a:'cavemine',o:no,label:'敲礦'};
+    else ctx={a:'none',label:'互動'};}
+  else if(inside){let near=null,nd=1e9;items.forEach(it=>{if(!['f_bed','f_chest','f_chair'].includes(it.id))return;it.cols.forEach(c=>{const d=Math.hypot(c.x-p.x,c.z-p.z);if(d<nd){nd=d;near={it,c};}});});
     if(sitting!==null)ctx={a:'stand',label:'起身'};
     else if(Math.hypot(p.x-DOORMAT.x,p.z-DOORMAT.z)<1.3)ctx={a:'exit',label:'出門'};
     else if(near&&nd<1.95&&near.it.id==='f_chair')ctx={a:'sit',label:'坐下',x:near.it.g.position.x,z:near.it.g.position.z,rot:near.it.rot};
@@ -923,6 +963,7 @@ function frame(now){
   else if(bt)ctx=!T('axe')?{a:'shake',t:bt,label:'搖樹'}:stamina<3?{a:'need',label:'砍樹',msg:'太累了。吃個紅帽蘑菇補體力吧。'}:{a:'chop',t:bt,label:'砍樹'};
   else if(!purified&&purifyT<0&&p.z<-17)ctx=inv.potion>0?{a:'purify',label:'淨霧'}:{a:'need',label:'淨霧',msg:'還沒有淨霧藥劑。配方：紅帽蘑菇 ×3 ＋ 藍水晶 ×1，到工坊裡的釜製作。'};
   else if(purified&&Math.hypot(p.x-spirit.position.x,p.z-spirit.position.z)<4)ctx={a:'spirit',label:'對話'};
+  else if(Math.hypot(p.x-CAVE_E.x,p.z-CAVE_E.z)<4.6&&p.z>CAVE_E.z)ctx={a:'cavein',label:'進礦洞'};
   else if(Math.hypot(p.x-DOOR_IN.x,p.z-DOOR_IN.z)<1.5)ctx={a:'enter',label:'進屋'};
   else{const st=STATIONS.find(o=>Math.hypot(o.x-p.x,o.z-p.z)-o.r<1.6);
     if(st)ctx={a:'station',s:st.id,label:st.name};
@@ -933,14 +974,14 @@ function frame(now){
   {const a2=$('act2');const show=!inside&&!layout&&typeof ctx.t==='object'&&ctx.t&&ctx.t.wood!==undefined&&T('axe')&&(ctx.a==='chop'||ctx.a==='need')&&ctx.label==='砍樹';if(a2.hidden===!!show){a2.hidden=!show;}a2._t=show?ctx.t:null;}
   if(usedT>0){usedT-=dt;if(usedT<=0){usedSlot='';hotbarUI();}}
 
-  if(!inside){const [c,w,h]=fitCanvas(mini);drawMap(c,w,h,player.position.x,player.position.z,1.15,false);}
+  if(!inside&&!inCave){const [c,w,h]=fitCanvas(mini);drawMap(c,w,h,player.position.x,player.position.z,1.15,false);}
   if(mapOpen){const [c,w,h]=fitCanvas(big);drawMap(c,w,h,mcx,mcz,baseScale()*mapZ,true);}
   renderer.render(scene,camera);
   requestAnimationFrame(frame);
 }
 // ---- M1 save system: localStorage, versioned, auto-save. Trees/rocks/mushrooms are not saved (they reset each day).
 const SAVE_KEY='mist-isle-save',SAVE_V=1;
-function saveGame(){if(skipSave)return;try{const pos=inside?[7.3,7.1]:[player.position.x,player.position.z];
+function saveGame(){if(skipSave)return;try{const pos=inside?[7.3,7.1]:inCave?[CAVE_E.x,CAVE_E.z+4.3]:[player.position.x,player.position.z];
   const d={v:SAVE_V,inv,tools,store,storeTools,BAG_MAX,day,gameMin,stamina,purified,timeRing,accOwned,accWorn,seen:[...seen],coins,dq,
     furn:items.filter(it=>!it.fixed).map(it=>({id:it.id,ix:it.ix,iz:it.iz,rot:it.rot})),pos};
   localStorage.setItem(SAVE_KEY,JSON.stringify(d));}catch(e){}}
