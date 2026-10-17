@@ -505,7 +505,7 @@ sheet.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)retu
   else if(t.dataset.x==='curve'){curveOn=!curveOn;curveU.value=curveOn?CURVE:0;renderPanel();}
   else if(t.dataset.x==='eat'){if(stamina>=100){toast('體力已經是滿的。',1200);return;}inv.mush--;stamina=Math.min(100,stamina+15);staUI();hotbarUI();renderPanel();}
   else if(t.dataset.sel){bagSel=t.dataset.sel;renderPanel();}
-  else if(t.dataset.make){const r=RECIPES.find(x=>x.id===t.dataset.make);if(!r.when&&!r.noItem){const after=Object.assign({},inv);Object.keys(r.need).forEach(k=>after[k]-=r.need[k]);const keep=inv;inv=after;const ok=r.tool?fits({tool:1}):fits({k:r.id==='potion'?'potion':r.id==='stam'?'stam':r.id,n:1});inv=keep;if(!ok){toast(FULL,2200);return;}}Object.keys(r.need).forEach(k=>inv[k]-=r.need[k]);r.make();hotbarUI();renderPanel();toast('做好了：'+r.name+'！',1400);if(!timeRing){timeRing=true;setTimeout(()=>toast('獲得時空戒指！之後可以在島上任何地方製作基本道具。',3200),1500);}}
+  else if(t.dataset.make){const r=RECIPES.find(x=>x.id===t.dataset.make);if(!r.when&&!r.noItem){const after=Object.assign({},inv);Object.keys(r.need).forEach(k=>after[k]-=r.need[k]);const keep=inv;inv=after;const ok=r.tool?fits({tool:1}):fits({k:r.id==='potion'?'potion':r.id==='stam'?'stam':r.id,n:1});inv=keep;if(!ok){toast(FULL,2200);return;}}Object.keys(r.need).forEach(k=>inv[k]-=r.need[k]);r.make();hotbarUI();renderPanel();toast('做好了：'+r.name+'！',1400);saveGame();if(!timeRing){timeRing=true;setTimeout(()=>toast('獲得時空戒指！之後可以在島上任何地方製作基本道具。',3200),1500);}}
 });
 let sitting=null;
 function face(x,z){player.rotation.y=Math.atan2(x-player.position.x,z-player.position.z);}
@@ -828,6 +828,28 @@ function frame(now){
   renderer.render(scene,camera);
   requestAnimationFrame(frame);
 }
+// ---- M1 save system: localStorage, versioned, auto-save. Trees/rocks/mushrooms are not saved (they reset each day).
+const SAVE_KEY='mist-isle-save',SAVE_V=1;
+function saveGame(){try{const pos=inside?[7.3,7.1]:[player.position.x,player.position.z];
+  const d={v:SAVE_V,inv,tools,store,storeTools,BAG_MAX,day,gameMin,stamina,purified,timeRing,
+    furn:items.map(it=>({id:it.id,ix:it.ix,iz:it.iz,rot:it.rot})),pos};
+  localStorage.setItem(SAVE_KEY,JSON.stringify(d));}catch(e){}}
+function loadGame(){let d=null;try{d=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');}catch(e){return false;}
+  if(!d||d.v!==SAVE_V)return false;
+  inv=Object.assign({mush:0,wood:0,stone:2,crys:0,potion:0,stam:0,branch:0,clay:0,iron:0,flax:0,cloth:0,moon:0,dew:0},d.inv||{});
+  tools=d.tools||{axe:[],pick:[]};store=d.store||{};storeTools=d.storeTools||{axe:[],pick:[]};
+  BAG_MAX=d.BAG_MAX||20;day=d.day||1;gameMin=(typeof d.gameMin==='number')?d.gameMin:gameMin;
+  stamina=(typeof d.stamina==='number')?d.stamina:stamina;timeRing=!!d.timeRing;
+  items.slice().forEach(removeItem);
+  (d.furn||[]).forEach(f=>{if(FURN[f.id])addItem(f.id,f.ix,f.iz,f.rot);});
+  if(d.purified){purified=true;forestMist.mat.opacity=0;forestMist.arr.forEach(m=>{m.visible=false;});}
+  if(d.pos){player.position.x=d.pos[0];player.position.z=d.pos[1];}
+  hotbarUI();staUI();return true;}
+const loaded=loadGame();
+setInterval(saveGame,10000);
+addEventListener('pagehide',saveGame);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)saveGame();});
+window.__save={save:saveGame,load:loadGame,key:SAVE_KEY,loaded};
 requestAnimationFrame(frame);
 setTimeout(()=>toast('拖曳左下搖桿移動。先搖樹收集樹枝，到工坊的工作台做簡易斧和簡易鎬；砍樹、敲石頭收集材料，再到大釜鍊淨霧藥劑，淨化北邊的灰霧。',6500),900);
 })();
