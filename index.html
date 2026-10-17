@@ -218,9 +218,10 @@ function tree(x,z,forest){
   const g=new THREE.Group();g.position.set(x,0,z);const s=0.8+rnd()*0.6;g.scale.setScalar(s);g.rotation.y=rnd()*6;
   const mT=ownMat(forest?fTrunk:toon(0x8A5A36),forest),m1=ownMat(forest?fLeaf:toon(0x4E9E4A),forest),m2=ownMat(forest?fLeaf2:toon(0x5DAE55),forest);
   const trunk=part(trunkG,mT,0,0.8,0,g,0.12),c1=part(coneG1,m1,0,2.8,0,g,0.07),c2=part(coneG2,m2,0,4.1,0,g,0.08);
+  const cut=new THREE.Mesh(new THREE.CircleGeometry(0.3,10),toon(0xE8C48E));cut.rotation.x=-Math.PI/2;cut.position.y=0.575;cut.visible=false;g.add(cut);
   const col={x,z,r:0.75*s};
   scene.add(g);colliders.push(col);treeDots.push({x,z,f:forest});
-  trees.push({g,x,z,s,forest,trunk,crown:[c1,c2],mats:[mT,m1,m2],outlines:[trunk,c1,c2].map(m=>m.children[0]),alpha:1,hits:0,state:'up',t:0,col,rotY:g.rotation.y,wood:3,branches:4});
+  trees.push({g,x,z,s,forest,trunk,crown:[c1,c2],mats:[mT,m1,m2],outlines:[trunk,c1,c2].map(m=>m.children[0]),alpha:1,hits:0,state:'up',t:0,col,rotY:g.rotation.y,wood:3,branches:4,cut});
 }
 let nTree=0;
 while(nTree<64){
@@ -316,11 +317,13 @@ const nodes=[];
 function addNode(kind,x,z){const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);
   if(kind==='moon'){part(new THREE.CylinderGeometry(0.18,0.22,0.45,8),toon(0xDDF3FB),0,0.22,0,g,0.15);const cap=new THREE.Mesh(new THREE.SphereGeometry(0.5,10,6,0,Math.PI*2,0,Math.PI/2),bend(new THREE.MeshBasicMaterial({color:0x8FDDF8})));cap.position.y=0.42;g.add(cap);}
   else if(kind==='dew'){const m=new THREE.Mesh(new THREE.OctahedronGeometry(0.28,0),bend(new THREE.MeshBasicMaterial({color:0xE6FAFF,transparent:true,opacity:0.9})));m.position.y=0.5;g.add(m);g.userData.spin=m;}
+  else if(kind==='stone'){part(new THREE.DodecahedronGeometry(0.26,0),toon(0xB8B2A8),0,0.16,0,g,0.1);part(new THREE.DodecahedronGeometry(0.16,0),toon(0xC9C3B9),0.3,0.1,0.14,g,0.1);}
   else if(kind==='flax'){[-0.25,0,0.25].forEach(o=>{part(new THREE.CylinderGeometry(0.05,0.07,1.3,5),toon(0x9ED67A),o,0.65,o*0.4,g,0.2);part(new THREE.SphereGeometry(0.12,6,5),toon(0xB9A3E6),o,1.35,o*0.4,g,0.2);});}
   nodes.push({kind,g,x,z,taken:false});}
 for(let i=0;i<7;i++){let x,z;do{const a=rnd()*Math.PI*2,r=8+rnd()*24;x=Math.cos(a)*r;z=Math.sin(a)*r;}while(inForest(x,z)||inCoast(x,z)||Math.hypot(x-9,z-6)<9);addNode('moon',x,z);}
 for(let i=0;i<8;i++){let x,z;do{const a=rnd()*Math.PI*2,r=5+rnd()*20;x=Math.cos(a)*r;z=Math.sin(a)*r;}while(inForest(x,z)||Math.hypot(x-9,z-6)<9);addNode('dew',x,z);}
 for(let i=0;i<9;i++){const x=(rnd()-0.5)*44,z=-26-rnd()*22;if(Math.hypot(x,z)<R-6)addNode('flax',x,z);}
+for(let i=0;i<10;i++){let x,z;do{const a=rnd()*Math.PI*2,r=6+rnd()*20;x=Math.cos(a)*r;z=Math.sin(a)*r;}while(inForest(x,z)||inCoast(x,z)||Math.hypot(x-9,z-6)<9);addNode('stone',x,z);}
 function nodeActive(n){if(n.taken)return false;if(n.kind==='moon')return isNight();if(n.kind==='dew')return isDawn();if(n.kind==='flax')return purified;return true;}
 // flowers
 const fG=new THREE.SphereGeometry(0.18,6,5);
@@ -545,7 +548,7 @@ function doAction(){
   if(a==='need'){toast(ctx.msg,2200);return;}
   if(a==='station'){const st=STATIONS.find(o=>o.id===ctx.s);face(st.x,st.z);craftSt=ctx.s;openPanel('craft');return;}
   if(a==='craft'){craftSt='ring';openPanel('craft');return;}
-  if(a==='node'){const n=ctx.n;const k=n.kind;if(!fits({k,n:1})){toast(FULL,2000);return;}face(n.x,n.z);n.taken=true;inv[k]=(inv[k]||0)+1;hotbarUI();toast({moon:'採到月光蘑菇！只有夜裡才找得到。',dew:'收集到晨露！太陽升高就會蒸發。',flax:'採到麻草，可以拿去織布機織布。'}[k],1800);return;}
+  if(a==='node'){const n=ctx.n;const k=n.kind;if(!fits({k,n:1})){toast(FULL,2000);return;}face(n.x,n.z);n.taken=true;inv[k]=(inv[k]||0)+1;hotbarUI();toast({stone:'撿到一顆小石子，徒手就能撿。',moon:'採到月光蘑菇！只有夜裡才找得到。',dew:'收集到晨露！太陽升高就會蒸發。',flax:'採到麻草，可以拿去織布機織布。'}[k],1800);return;}
   if(a==='sleep'){face(ctx.x,ctx.z);openPanel('sleep');return;}
   if(a==='chest'){face(ctx.x,ctx.z);openPanel('chest');return;}
   if(a==='sit'){sitting=ctx.rot;player.position.set(ctx.x,0.64,ctx.z);player.rotation.y=ctx.rot*Math.PI/2;return;}
@@ -689,7 +692,7 @@ function renderSleep(){const h=hourNow();
   sheet.innerHTML='<div class="shead"><h2>要睡到幾點？</h2><button class="pbtn" type="button" data-x="close">不睡了</button></div>'+
   '<div class="note">現在 '+String(Math.floor(h)).padStart(2,'0')+':'+String(Math.floor(gameMin%60)).padStart(2,'0')+'。睡覺會回滿體力。過了早上 5 點就是新的一天：每棵樹又能砍出 3 塊木材、石頭恢復、蘑菇長回來。</div>'+
   opts.map(([hh,l,n])=>'<button class="pbtn opt" type="button" data-sleep="'+hh+'"><span>'+l+'</span><span class="note">'+n+'</span></button>').join('');}
-function newDay(){trees.forEach(t=>{t.wood=3;t.branches=4;if(t.state!=='up'){t.state='up';t.hits=0;t.t=0;t.g.rotation.z=0;t.crown.forEach(c=>{c.visible=true;});t.trunk.scale.y=1;t.trunk.position.y=0.8;t.col.r=0.75*t.s;}});
+function newDay(){trees.forEach(t=>{t.wood=3;t.branches=4;if(t.state!=='up'){t.state='up';t.hits=0;t.t=0;t.g.rotation.z=0;t.crown.forEach(c=>{c.visible=true;});t.cut.visible=false;t.trunk.scale.y=1;t.trunk.position.y=0.8;t.col.r=0.75*t.s;}});
   rocks.forEach(r=>{r.state='full';r.hits=0;r.regrow=0;r.m.scale.set(r.sc[0],r.sc[1],r.sc[2]);r.mat.color.setHex(0xA9A39A);});
   mushes.forEach(m=>{if(!m.alive){m.alive=true;scene.add(m.g);}});nodes.forEach(n=>{n.taken=false;});}
 function sleepUntil(hh){closePanel();const bed=items.find(i=>i.id==='f_bed');const c=centerOf(bed.id,bed.ix,bed.iz,bed.rot);
@@ -790,7 +793,7 @@ function frame(now){
     t.mats.forEach(m=>{if(m.transparent!==fading){m.transparent=fading;m.depthWrite=!fading;m.needsUpdate=true;}m.opacity=fading?t.alpha:1;});
     t.outlines.forEach(o=>{o.visible=!fading;});
     if(t.state==='up'){if(t.t>0){t.t-=dt;t.g.rotation.z=Math.sin(t.t*60)*0.06*(t.t/0.32);}else t.g.rotation.z=0;}
-    else if(t.state==='falling'){t.t+=dt;const k=Math.min(1,t.t/0.7);t.g.rotation.z=k*k*1.45;if(k>=1){t.state='stump';t.t=0;t.g.rotation.z=0;t.crown.forEach(c=>c.visible=false);t.trunk.scale.y=0.35;t.trunk.position.y=0.28;t.col.r=0.42*t.s;}}
+    else if(t.state==='falling'){t.t+=dt;const k=Math.min(1,t.t/0.7);t.g.rotation.z=k*k*1.45;if(k>=1){t.state='stump';t.t=0;t.g.rotation.z=0;t.crown.forEach(c=>c.visible=false);t.trunk.scale.y=0.35;t.trunk.position.y=0.28;t.cut.visible=true;t.col.r=0.42*t.s;}}
     else if(t.state==='stump'){if(false){t.state='up';t.hits=0;t.t=0;t.g.rotation.z=0;t.crown.forEach(c=>{c.visible=true;});t.trunk.scale.y=1;t.trunk.position.y=0.8;t.col.r=0.75*t.s;}}
   });
   rocks.forEach(r=>{
