@@ -144,6 +144,7 @@ body.inside #mini,body.inside #miniN,body.inside #miniTime{display:none}
   <button class="sbtn" type="button" data-p="craft"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"></path><path d="M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"></path></svg>配方書</button>
   <button class="sbtn" type="button" data-p="dress"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4L3 7l2 4 3-1v10h8V10l3 1 2-4-5-3a4 4 0 0 1-8 0z"></path></svg>換裝</button>
   <button class="sbtn" type="button" data-p="inn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-6 8 6"></path><path d="M6 10v9h12v-9"></path><path d="M10 19v-5h4v5"></path></svg>旅人小屋</button>
+  <button class="sbtn" type="button" data-p="exchange"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h13l-3-3"></path><path d="M20 16H7l3 3"></path></svg>交換所</button>
   <button class="sbtn" type="button" data-p="save"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"></path><path d="M8 4v5h7V4"></path><path d="M8 20v-6h8v6"></path></svg>存檔</button>
   <button class="sbtn" type="button" data-p="quest"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4h11v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2h12"></path><path d="M7 4a2 2 0 0 0-2 2v10"></path></svg>任務<span class="dot" id="questDot" hidden></span></button>
 </div>
@@ -648,9 +649,15 @@ const RECIPES=[
  {id:'necklace',adv:true,st:'metal',name:'月光項鍊',need:{moon:2,crys:1},make:()=>{accOwned.necklace=true;},noItem:true,done:()=>!!accOwned.necklace,note:'飾品：開寶箱時稀有材料機率 +3%',locked:()=>lockTier(2)},
  {id:'lamp',adv:true,st:'metal',name:'發光項鍊',need:{gold:2,crys:1},make:()=>{accOwned.lamp=true;},noItem:true,done:()=>!!accOwned.lamp,note:'飾品：礦洞裡可見範圍變大',locked:()=>lockTier(2)},
  {id:'hairband',adv:true,st:'loom',name:'麻草髮帶',need:{flax:3,cloth:1},make:()=>{accOwned.hairband=true;},noItem:true,done:()=>!!accOwned.hairband,note:'飾品：外觀，沒有效果',locked:()=>lockTier(3)},
- {id:'bagup',adv:true,icon:'bag',st:'loom',name:'背包擴充',need:{cloth:3},make:()=>{BAG_MAX=Math.min(40,BAG_MAX+10);},when:()=>BAG_MAX<40,note:'背包 +10 格（最多 40）',noItem:true}
+ {id:'bagup',adv:true,icon:'bag',st:'loom',name:'背包擴充',need:{cloth:3},make:()=>{BAG_MAX=Math.min(40,BAG_MAX+10);},when:()=>BAG_MAX<40,note:'背包 +10 格（最多 40）',noItem:true},
+  {id:'g_wood_sword',adv:true,at:'metal',st:'smith',icon:'axe',name:'木劍',need:{wood:3},make:()=>{gearInv.g_wood_sword=(gearInv.g_wood_sword||0)+1;},noItem:true,note:'武器 · 戰力 +8'},
+  {id:'g_stone_blade',adv:true,at:'metal',st:'smith',icon:'pick',name:'石刃',need:{stone:2,branch:1},make:()=>{gearInv.g_stone_blade=(gearInv.g_stone_blade||0)+1;},noItem:true,note:'武器 · 戰力 +14'},
+  {id:'g_cloth_vest',adv:true,at:'metal',st:'smith',icon:'cloth',name:'麻布背心',need:{cloth:2,flax:2},make:()=>{gearInv.g_cloth_vest=(gearInv.g_cloth_vest||0)+1;},noItem:true,note:'防具 · 戰力 +8'},
+  {id:'g_clay_armor',adv:true,at:'metal',st:'smith',icon:'clay',name:'黏土甲',need:{clay:3},make:()=>{gearInv.g_clay_armor=(gearInv.g_clay_armor||0)+1;},noItem:true,note:'防具 · 戰力 +14'},
+  {id:'g_dew_charm',adv:true,at:'metal',st:'smith',icon:'dew',name:'晨露墜',need:{dew:2},make:()=>{gearInv.g_dew_charm=(gearInv.g_dew_charm||0)+1;},noItem:true,note:'飾品 · 戰力 +6'},
+  {id:'g_moon_charm',adv:true,at:'metal',st:'smith',icon:'moon',name:'月光墜',need:{moon:2},make:()=>{gearInv.g_moon_charm=(gearInv.g_moon_charm||0)+1;},noItem:true,note:'飾品 · 戰力 +10'}
 ];
-const STNAME={bench:'工具台',metal:'金工台',caul:'釜',loom:'織布機',ring:'時空戒指'};
+const STNAME={bench:'工具台',metal:'金工台',caul:'釜',loom:'織布機',ring:'時空戒指',smith:'打鐵舖'};
 let purified=false,purifyT=-1,curveOn=true,usedSlot='',usedT=0,timeRing=false;
 function staUI(){$('staFill').style.width=(stamina/maxStam()*100)+'%';$('staFill').style.background=stamina<25?'#E0663F':'#6DBB58';}
 let hotCfg=['axe','pick','potion','mush','stam'];
@@ -701,7 +708,17 @@ const GEAR=[ // 裝備：用材料在旅人小屋製作
  {id:'g_moon_charm',slot:'acc',name:'月光墜',pw:10,cost:{moon:2}}];
 const GEAR_SLOT={weapon:'武器',armor:'防具',acc:'飾品'};
 const DTASK_NAMES=['採集林子','巡視礦洞','護送貨物','尋找失物','清理苔石','探訪霧邊','整理蕨園','撿拾晨露'];
-let adv={},pity=0,disp=[],token=0,advSel=[],gearInv={},advDetail=null,advTask=null,advSlot=null;
+let adv={},pity=0,disp=[],token=0,advSel=[],gearInv={},advDetail=null,advTask=null,advSlot=null,exTab='sell';
+const SELL_PRICE={wood:2,stone:2,branch:1,clay:2,iron:4,crys:6,mush:2,moon:5,dew:4,flax:2,cloth:3,bug:2,honey:4,copper:5,gold:8,moss:3,fern:2};
+function sellMat(k,all){const n=all?(inv[k]||0):1;if(n<=0)return;inv[k]-=n;coins+=SELL_PRICE[k]*n;hotbarUI();saveGame();renderPanel();toast('賣出'+NAME[k]+' ×'+n+'，獲得 '+(SELL_PRICE[k]*n)+' 金幣。',1400);}
+function exchangeHTML(){
+  const tabs='<div class="btabs" role="tablist"><button class="btab'+(exTab==='sell'?' on':'')+'" type="button" role="tab" aria-selected="'+(exTab==='sell')+'" data-etab="sell">賣出戰利品</button><button class="btab'+(exTab==='ex'?' on':'')+'" type="button" role="tab" aria-selected="'+(exTab==='ex')+'" data-etab="ex">交換素材</button></div>';
+  let body;
+  if(exTab==='sell'){const rows=TRIAL_MATS.filter(k=>inv[k]>0).map(k=>'<div class="rec"><span class="ic">'+(ICON[k]?svg(k,36):'')+'</span><span class="tx"><span class="nm">'+NAME[k]+' ×'+inv[k]+'</span><span class="need">每個 '+SELL_PRICE[k]+' 金幣</span></span><button class="pbtn" type="button" data-sell="'+k+'">賣 1</button><button class="pbtn go" type="button" data-sell="'+k+'" data-all="1">全賣</button></div>').join('');
+    body='<div class="note">金幣 '+coins+'</div>'+(rows||'<div class="note">背包裡沒有可以賣的材料。</div>');}
+  else{const mats=TRIAL_MATS.filter(k=>inv[k]>=ADV_EXCH_N);
+    body='<div class="note">同種材料 '+ADV_EXCH_N+' 個換 1 信物　目前信物 '+token+'</div><div class="row">'+(mats.length?mats.map(k=>'<button class="pbtn" type="button" data-x="exch" data-k="'+k+'">'+NAME[k]+' ×'+ADV_EXCH_N+'</button>').join(''):'<div class="note">沒有足夠的材料（每種需要 '+ADV_EXCH_N+' 個）。</div>')+'</div>';}
+  return '<div class="shead"><h2>交換所</h2><button class="pbtn" type="button" data-x="close" aria-label="關閉">關閉</button></div>'+tabs+'<div class="bookbody">'+body+'</div>';}
 const advOf=id=>ADV.find(x=>x.id===id);
 const gearOf=id=>GEAR.find(g=>g.id===id);
 // 每天固定的 6 個派遣任務（同一天所有人相同）
@@ -738,9 +755,6 @@ function advClaim(i){const d=disp[i];if(!d||gameMin<d.end)return;
   disp.splice(i,1);hotbarUI();saveGame();renderPanel();toast((d.ok?'任務成功':'任務失敗（只拿到一半）')+'：'+d.task.name+'，戰利品 '+n+' 個已放進背包。\n'+lines.join('\n'),3600);}
 function advExch(k){if((inv[k]||0)<ADV_EXCH_N){toast('材料不足（需要 '+ADV_EXCH_N+' 個同種材料）。',1400);return;}
   inv[k]-=ADV_EXCH_N;token++;hotbarUI();saveGame();renderPanel();toast('收購成功：信物 +1',1400);}
-function gearCraft(gid){const g=gearOf(gid);if(!g)return;
-  for(const k in g.cost){if((inv[k]||0)<g.cost[k]){toast('材料不足，無法製作'+g.name+'。',1400);return;}}
-  for(const k in g.cost)inv[k]-=g.cost[k];gearInv[gid]=(gearInv[gid]||0)+1;hotbarUI();saveGame();renderPanel();toast('製作完成：'+g.name,1400);}
 function gearEquip(aid,slot,gid){const a=adv[aid];if(!a)return;a.eq=a.eq||{};
   const old=a.eq[slot];if(old)gearInv[old]=(gearInv[old]||0)+1;
   if(gid){gearInv[gid]--;if(gearInv[gid]<=0)delete gearInv[gid];a.eq[slot]=gid;}else a.eq[slot]=null;
@@ -763,9 +777,6 @@ function innHTML(){
   const party=idle.length?idle.map(a=>'<button class="pbtn'+(advSel.includes(a.id)?' go':'')+'" type="button" data-adv="'+a.id+'">'+a.name+'　戰力 '+advPower(a.id)+(advSel.includes(a.id)?'（已選）':'')+'</button>').join(''):'<div class="note">目前沒有待命的冒險者。</div>';
   let est='';if(advTask!=null&&advSel.length){const t=tasks[advTask];const p=partyPower(advSel);est='<div class="note">隊伍戰力 '+p+' ／ 需要 '+t.need+'，預估成功率 '+Math.round(advChance(p,t.need)*100)+'%（失敗只拿一半獎勵）</div>';}
   const dl=disp.length?disp.map((d,i)=>{const ready=gameMin>=d.end;const left=Math.max(0,Math.ceil((d.end-gameMin)/60));return '<div class="rec"><span class="tx"><span class="nm">'+d.task.name+'　'+'★'.repeat(d.task.diff)+'　'+d.ids.map(id=>advOf(id).name).join('、')+'</span><span class="need">'+(ready?'已回來':'還剩約 '+left+' 小時')+'</span></span><button class="pbtn go" type="button" data-x="claimdisp" data-i="'+i+'"'+(ready?'':' disabled')+'>領取</button></div>';}).join(''):'<div class="note">目前沒有派遣中的隊伍。</div>';
-  const mats=TRIAL_MATS.filter(k=>inv[k]>=ADV_EXCH_N);
-  const ex=mats.length?mats.map(k=>'<button class="pbtn" type="button" data-x="exch" data-k="'+k+'">'+NAME[k]+' ×'+ADV_EXCH_N+'</button>').join(''):'<div class="note">沒有足夠的材料（每種需要 '+ADV_EXCH_N+' 個）。</div>';
-  const crafts=GEAR.map(g=>'<button class="rec advrow" type="button" data-craft="'+g.id+'"><span class="tx"><span class="nm">'+g.name+'（'+GEAR_SLOT[g.slot]+'　戰力 +'+g.pw+'）</span><span class="need">需要 '+Object.keys(g.cost).map(k=>NAME[k]+' ×'+g.cost[k]).join('、')+'　持有 '+(gearInv[g.id]||0)+'</span></span></button>').join('');
   return '<div class="shead"><h2>旅人小屋</h2><button class="pbtn" type="button" data-x="close" aria-label="關閉">關閉</button></div>'+
   '<div class="note">金幣 '+coins+'　信物 '+token+'　距離保底還差 '+(ADV_PITY-pity)+' 抽</div>'+
   '<div class="sec">招募</div><div class="row"><button class="pbtn go" type="button" data-x="pull"'+(coins<ADV_PULL_COST?' disabled':'')+'>單抽（'+ADV_PULL_COST+' 金幣）</button></div>'+
@@ -775,14 +786,13 @@ function innHTML(){
   '<div class="sec">派遣隊伍（最多 '+ADV_PARTY_MAX+' 人）</div><div class="row">'+party+'</div>'+est+
   '<div class="row"><button class="pbtn go" type="button" data-x="dispatch"'+(idle.length&&advSel.length&&advTask!=null?'':' disabled')+'>出發</button></div>'+
   '<div class="sec">派遣中</div>'+dl+
-  '<div class="sec">裝備製作</div>'+crafts+
-  '<div class="sec">收購材料（'+ADV_EXCH_N+' 個同種換 1 信物）</div><div class="row">'+ex+'</div>';}
+  '<div class="note">裝備製作在金工台旁的打鐵舖；賣出戰利品與交換素材請到交換所。</div>';}
 function openPanel(k){chestMsg='';panelKind=k;panel.hidden=false;jx=jy=0;knob.style.transform='';renderPanel();sheet.scrollTop=0;}
 function closePanel(){panel.hidden=true;panelKind='';advDetail=null;advSlot=null;}
 panel.addEventListener('click',e=>{if(e.target===panel)closePanel();});
 addEventListener('keydown',e=>{if(e.key==='Escape'&&!panel.hidden)closePanel();if((e.key==='b'||e.key==='B')&&panel.hidden)openPanel('bag');if((e.key==='r'||e.key==='R')&&panel.hidden)openPanel('book');});
 document.querySelectorAll('.sbtn').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.p;
-  if(k==='bag')openPanel('bag');else if(k==='craft')openPanel('book');else if(k==='save')openPanel('save');else if(k==='dress')openPanel('dress');else if(k==='quest')openPanel('quest');else if(k==='inn')openPanel('inn');
+  if(k==='bag')openPanel('bag');else if(k==='craft')openPanel('book');else if(k==='save')openPanel('save');else if(k==='dress')openPanel('dress');else if(k==='quest')openPanel('quest');else if(k==='inn')openPanel('inn');else if(k==='exchange')openPanel('exchange');
   else toast('任務畫面已在 UI 原型裡，M4 接進遊戲。',2200);}));
 function renderPanel(){
   if(panelKind==='chest'){renderChest();return;}
@@ -802,24 +812,26 @@ function renderPanel(){
       hotRowHTML(selC?selC.k:'')+'<div class="shead" style="margin-top:4px"><span class="note">畫面設定</span><button class="pbtn" type="button" data-x="curve">地平線彎曲：'+(curveOn?'開':'關')+'</button></div>';
   }else if(panelKind==='book'){
     const canNow=r=>{const lk=typeof r.locked==='function'?r.locked():r.locked;return !lk&&Object.keys(r.need).every(k=>inv[k]>=r.need[k])&&canMakeAt(r)&&!(r.done&&r.done());};
-    const bookRow=r=>{const lk=typeof r.locked==='function'?r.locked():r.locked;const mats=Object.keys(r.need).every(k=>inv[k]>=r.need[k]);const here=canMakeAt(r);const dn=!!(r.done&&r.done());const can=!lk&&mats&&here&&!dn;const why=dn?'已放進飾品欄，可以到換裝裝備。':lk?lk:!here?(r.adv?'需要走到'+STNAME[r.st]+'旁邊':'需要裝備時空戒指（換裝）'):!mats?'材料不足':'';const has=r.tool&&tools[r.tid||r.id]&&tools[r.tid||r.id].filter(x=>x.kind===r.name).length?' （已有 '+tools[r.tid||r.id].filter(x=>x.kind===r.name).length+' 把）':'';return '<div class="rec st-'+r.st+'"'+(can?'':' style="opacity:.6"')+'><span class="ic">'+svg(r.icon||r.id,36)+'</span><span class="tx"><span class="nm">'+r.name+has+'</span><span class="need">'+Object.keys(r.need).map(k=>NAME[k]+' '+inv[k]+'/'+r.need[k]).join('、')+(why?'<span class="note">　'+why+'</span>':'')+'</span></span><button class="pbtn go" type="button" data-make="'+r.id+'"'+(can?'':' disabled')+'>'+(dn?'已製作':lk?'未解鎖':'製作')+'</button></div>';};
+    const bookRow=r=>{const lk=typeof r.locked==='function'?r.locked():r.locked;const mats=Object.keys(r.need).every(k=>inv[k]>=r.need[k]);const here=canMakeAt(r);const dn=!!(r.done&&r.done());const can=!lk&&mats&&here&&!dn;const why=dn?'已放進飾品欄，可以到換裝裝備。':lk?lk:!here?(r.adv?'需要走到'+STNAME[r.at||r.st]+'旁邊':'需要裝備時空戒指（換裝）'):!mats?'材料不足':'';const has=r.tool&&tools[r.tid||r.id]&&tools[r.tid||r.id].filter(x=>x.kind===r.name).length?' （已有 '+tools[r.tid||r.id].filter(x=>x.kind===r.name).length+' 把）':'';return '<div class="rec st-'+r.st+'"'+(can?'':' style="opacity:.6"')+'><span class="ic">'+svg(r.icon||r.id,36)+'</span><span class="tx"><span class="nm">'+r.name+has+'</span><span class="need">'+Object.keys(r.need).map(k=>NAME[k]+' '+inv[k]+'/'+r.need[k]).join('、')+(why?'<span class="note">　'+why+'</span>':'')+'</span></span><button class="pbtn go" type="button" data-make="'+r.id+'"'+(can?'':' disabled')+'>'+(dn?'已製作':lk?'未解鎖':'製作')+'</button></div>';};
     const bookRec=RECIPES.filter(r=>!r.when||r.id==='bagup');
-    const grp=list=>['bench','metal','caul','loom'].map(st=>{const xs=list.filter(r=>r.st===st);return xs.length?'<div class="sec st-'+st+'">'+STNAME[st]+'</div>'+xs.map(bookRow).join(''):'';}).join('');
+    const grp=list=>['bench','metal','caul','loom','smith'].map(st=>{const xs=list.filter(r=>r.st===st);return xs.length?'<div class="sec st-'+st+'">'+STNAME[st]+'</div>'+xs.map(bookRow).join(''):'';}).join('');
     const rows=(bookRec.some(canNow)?grp(bookRec.filter(canNow)):'<div class="note">目前沒有可以馬上做的配方。</div>')+'<div class="sec">僅供觀察（目前做不了）</div>'+grp(bookRec.filter(r=>!canNow(r)));
     sheet.innerHTML='<div class="shead"><h2>'+(bookTab==='dex'?'圖鑑':'配方書')+'</h2><button class="pbtn" type="button" data-x="close" aria-label="關閉配方書">關閉</button></div><div class="btabs" role="tablist"><button class="btab'+(bookTab==='dex'?'':' on')+'" type="button" role="tab" aria-selected="'+(bookTab==='dex'?'false':'true')+'" data-btab="recipe">配方</button><button class="btab'+(bookTab==='dex'?' on':'')+'" type="button" role="tab" aria-selected="'+(bookTab==='dex'?'true':'false')+'" data-btab="dex">圖鑑</button></div><div class="bookbody">'+(bookTab==='dex'?dexHTML():rows)+'</div>'+
       '<div class="note">'+(timeRing&&accWorn.includes('ring')?'時空戒指已裝備，可以在島上製作基本道具。':'在島上製作基本道具，需要先裝備時空戒指（到換裝）。')+'家具與進階配方請走到工坊裡對應的工具台、金工台、釜或織布機。</div>';
   }else if(panelKind==='dress'){
     sheet.innerHTML='<div class="shead"><h2>換裝</h2><button class="pbtn" type="button" data-x="close" aria-label="關閉">關閉</button></div>'+accListHTML();
+  }else if(panelKind==='exchange'){
+    sheet.innerHTML=exchangeHTML();
   }else if(panelKind==='inn'){
     sheet.innerHTML=innHTML();
   }else if(panelKind==='quest'){
     sheet.innerHTML=questHTML();
   }else if(panelKind==='craft'){
-    sheet.innerHTML='<div class="shead"><h2>'+STNAME[craftSt]+'</h2><button class="pbtn" type="button" data-x="close" aria-label="關閉">關閉</button></div>'+
-      RECIPES.filter(r=>(craftSt==='ring'?!r.adv:r.st===craftSt)&&(!r.when||r.when())&&!(r.done&&r.done())).map(r=>{const ok=Object.keys(r.need).every(k=>inv[k]>=r.need[k]);const tk=r.tid||r.id;const has=r.tool&&tools[tk]&&tools[tk].filter(x=>x.kind===r.name).length?{n:tools[tk].filter(x=>x.kind===r.name).length}:null;
+    let smithHdr=0;sheet.innerHTML='<div class="shead"><h2>'+STNAME[craftSt]+'</h2><button class="pbtn" type="button" data-x="close" aria-label="關閉">關閉</button></div>'+
+      RECIPES.filter(r=>(craftSt==='ring'?!r.adv:(r.st===craftSt||r.at===craftSt))&&(!r.when||r.when())&&!(r.done&&r.done())).map(r=>{const ok=Object.keys(r.need).every(k=>inv[k]>=r.need[k]);const tk=r.tid||r.id;const has=r.tool&&tools[tk]&&tools[tk].filter(x=>x.kind===r.name).length?{n:tools[tk].filter(x=>x.kind===r.name).length}:null;
         const need=Object.keys(r.need).map(k=>'<span class="'+(inv[k]>=r.need[k]?'ok':'lack')+'">'+NAME[k]+' '+inv[k]+'/'+r.need[k]+'</span>').join('、');
         const lk=typeof r.locked==='function'?r.locked():r.locked;if(lk)return '<div class="rec" style="opacity:.6"><span class="ic">'+svg(r.icon||r.id,36)+'</span><span class="tx"><span class="nm">'+r.name+'</span><span class="need">'+lk+'</span></span><button class="pbtn" type="button" disabled>未解鎖</button></div>';
-        return '<div class="rec st-'+r.st+'"><span class="ic">'+svg(r.icon||r.id,36)+'</span><span class="tx"><span class="nm">'+r.name+(has?'（已有 '+has.n+' 把）':'')+(r.note?'<span class="note">　'+r.note+'</span>':'')+'</span><span class="need">'+need+'</span></span><button class="pbtn go" type="button" data-make="'+r.id+'"'+(ok?'':' disabled')+'>'+(has?'再做一把':'製作')+'</button></div>';}).join('')+
+        return (r.st==='smith'&&!smithHdr++?'<div class="sec">打鐵舖</div>':'')+'<div class="rec st-'+r.st+'"><span class="ic">'+svg(r.icon||r.id,36)+'</span><span class="tx"><span class="nm">'+r.name+(has?'（已有 '+has.n+' 把）':'')+(r.note?'<span class="note">　'+r.note+'</span>':'')+'</span><span class="need">'+need+'</span></span><button class="pbtn go" type="button" data-make="'+r.id+'"'+(ok?'':' disabled')+'>'+(has?'再做一把':'製作')+'</button></div>';}).join('')+
       '<div class="note">示範版按下就完成。正式版合成時會有火候、攪拌小遊戲，做得好品質更高。</div>';
   }
 }
@@ -835,6 +847,8 @@ sheet.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)retu
   else if(t.dataset.sleep){sleepUntil(+t.dataset.sleep);}
   else if(t.dataset.bag!==undefined&&panelKind==='chest'){const c=chestCells.bag[+t.dataset.bag];const before=storeSlots();moveCell(c,inv,tools,store,storeTools);if(storeSlots()>STORE_MAX){moveCell(c.t?c:{k:c.k,c:c.c},store,storeTools,inv,tools);toast('收納箱滿了。',1500);}hotbarUI();renderChest();}
   else if(t.dataset.box!==undefined&&panelKind==='chest'){const c=chestCells.box[+t.dataset.box];moveCell(c,store,storeTools,inv,tools);if(slotsUsed()>BAG_MAX){moveCell(c,inv,tools,store,storeTools);toast(FULL,1800);}hotbarUI();renderChest();}
+  else if(t.dataset.etab){exTab=t.dataset.etab;renderPanel();}
+  else if(t.dataset.sell!==undefined){sellMat(t.dataset.sell,!!t.dataset.all);}
   else if(t.dataset.adv!==undefined){advToggle(t.dataset.adv);}
   else if(t.dataset.advview!==undefined){advDetail=t.dataset.advview;advSlot=null;renderPanel();sheet.scrollTop=0;}
   else if(t.dataset.x==='advback'){advDetail=null;advSlot=null;renderPanel();}
@@ -842,7 +856,6 @@ sheet.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)retu
   else if(t.dataset.eqpick!==undefined){advSlot=t.dataset.eqpick;renderPanel();}
   else if(t.dataset.eqset!==undefined){gearEquip(advDetail,gearOf(t.dataset.eqset).slot,t.dataset.eqset);}
   else if(t.dataset.eqoff!==undefined){gearEquip(advDetail,t.dataset.eqoff,null);}
-  else if(t.dataset.craft!==undefined){gearCraft(t.dataset.craft);renderPanel();}
   else if(t.dataset.x==='pull'){advPull();}
   else if(t.dataset.x==='dispatch'){advStart();}
   else if(t.dataset.x==='claimdisp'){advClaim(+t.dataset.i);}
@@ -853,7 +866,7 @@ sheet.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)retu
   else if(t.dataset.make){const r=RECIPES.find(x=>x.id===t.dataset.make);if(!r.when&&!r.noItem){const after=Object.assign({},inv);Object.keys(r.need).forEach(k=>after[k]-=r.need[k]);const keep=inv;inv=after;const ok=r.tool?fits({tool:1}):fits({k:r.id==='potion'?'potion':r.id==='stam'?'stam':r.id,n:1});inv=keep;if(!ok){toast(FULL,2200);return;}}Object.keys(r.need).forEach(k=>inv[k]-=r.need[k]);r.make();hotbarUI();renderPanel();toast('做好了：'+r.name+'！',1400);saveGame();if(!timeRing){timeRing=true;accOwned.ring=true;setTimeout(()=>toast('獲得時空戒指！之後可以在島上任何地方製作基本道具。',3200),1500);}}
 });
 let sitting=null;let importArmed=false,saveMsg='',saveDraft='',skipSave=false;
-const canMakeAt=r=>{if(r.adv){if(!inside)return false;const p=player.position;return STATIONS.some(o=>o.inside&&o.id===r.st&&Math.hypot(o.x-p.x,o.z-p.z)-o.r<1.6);}return !!(timeRing&&accWorn.includes('ring'));};
+const canMakeAt=r=>{if(r.adv){if(!inside)return false;const p=player.position;return STATIONS.some(o=>o.inside&&o.id===(r.at||r.st)&&Math.hypot(o.x-p.x,o.z-p.z)-o.r<1.6);}return !!(timeRing&&accWorn.includes('ring'));};
 sheet.addEventListener('input',e=>{if(e.target.id==='saveTxt')saveDraft=e.target.value;});
 function face(x,z){player.rotation.y=Math.atan2(x-player.position.x,z-player.position.z);}
 const hourNow=()=>(gameMin/60)%24;
