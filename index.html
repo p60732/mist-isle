@@ -28,7 +28,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--sky);color:var(-
 .dot{width:14px;height:14px;border-radius:50%}
 .toggle{pointer-events:auto;border:0;font:inherit;font-size:12px;color:var(--ink);cursor:pointer}
 .toggle:focus-visible,#act:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
-#toast{z-index:6;left:50%;bottom:calc(232px + env(safe-area-inset-bottom,0px));transform:translate(-50%,8px);width:max-content;max-width:min(calc(100vw - 32px),420px);box-sizing:border-box;font-size:15px;line-height:1.55;text-align:center;opacity:0;transition:opacity .3s,transform .3s}
+#toast{z-index:6;left:50%;top:calc(30% + env(safe-area-inset-top,0px));bottom:auto;transform:translate(-50%,8px);width:max-content;max-width:min(calc(100vw - 32px),420px);box-sizing:border-box;font-size:15px;line-height:1.55;text-align:center;opacity:0;transition:opacity .3s,transform .3s}
 #toast.on{opacity:1;transform:translate(-50%,0)}
 #joy{position:fixed;z-index:3;left:max(24px,calc(env(safe-area-inset-left,0px) + 12px));bottom:calc(28px + env(safe-area-inset-bottom,0px));width:120px;height:120px;border-radius:50%;background:rgba(255,248,236,.45);border:3px solid rgba(255,248,236,.9);touch-action:none}
 #knob{position:absolute;left:36px;top:36px;width:48px;height:48px;border-radius:50%;background:var(--paper);box-shadow:0 3px 0 var(--paper-edge)}
@@ -38,6 +38,7 @@ body.laying #act2{display:none!important}
 #act[data-a="none"]{background:#B9AE9C;box-shadow:0 5px 0 #8E846F}
 #act[data-a="purify"]{background:#7E5FC4;box-shadow:0 5px 0 #5A4196}
 #mini{position:fixed;z-index:3;left:max(12px,env(safe-area-inset-left,0px));top:calc(84px + env(safe-area-inset-top,0px));width:112px;height:112px;border-radius:50%;border:4px solid var(--paper);box-shadow:0 3px 0 var(--paper-edge);background:#6EC3DE;cursor:pointer;touch-action:manipulation}
+#miniTime{position:fixed;z-index:3;left:max(12px,env(safe-area-inset-left,0px));top:calc(204px + env(safe-area-inset-top,0px));width:112px;box-sizing:border-box;text-align:center;white-space:nowrap;font-size:12px;line-height:1.4;color:var(--ink);background:var(--paper);border-radius:12px;box-shadow:0 2px 0 var(--paper-edge);padding:3px 6px;pointer-events:none}
 #miniN{position:fixed;z-index:4;left:calc(max(12px,env(safe-area-inset-left,0px)) + 52px);top:calc(78px + env(safe-area-inset-top,0px));width:18px;height:18px;border-radius:50%;background:var(--ink);color:#fff;font:700 10px/18px var(--f-ui);text-align:center;pointer-events:none}
 #mapOv{position:fixed;inset:0;z-index:10;background:rgba(36,42,58,.55);display:flex;align-items:center;justify-content:center;padding:calc(12px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
 #mapOv[hidden],[hidden]{display:none!important}
@@ -104,8 +105,8 @@ body.laying #act2{display:none!important}
 #layItems{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
 .fi{flex-shrink:0;width:66px;height:66px;border-radius:14px;border:3px solid transparent;background:var(--paper);box-shadow:0 3px 0 var(--paper-edge);display:flex;flex-direction:column;align-items:center;justify-content:center;font:700 11px var(--f-ui);color:var(--ink);cursor:pointer;padding:0;position:relative}
 .fi.on{border-color:var(--amber)}.fi .n{position:absolute;right:5px;top:3px;font-size:11px}
-body.laying #joy,body.laying #act,body.laying #hotbar,body.laying #side,body.laying #mini,body.laying #miniN{display:none}
-body.inside #mini,body.inside #miniN{display:none}
+body.laying #joy,body.laying #act,body.laying #hotbar,body.laying #side,body.laying #mini,body.laying #miniN,body.laying #miniTime{display:none}
+body.inside #mini,body.inside #miniN,body.inside #miniTime{display:none}
 .slot .cnt{position:absolute;left:4px;top:2px;font:700 10px var(--f-ui);background:var(--ink);color:#fff;border-radius:7px;padding:0 4px;line-height:14px}
 #fade{position:fixed;inset:0;z-index:20;background:#141A2E;opacity:0;pointer-events:none;transition:opacity .8s}
 #fade.on{opacity:1}
@@ -147,7 +148,7 @@ body.inside #mini,body.inside #miniN{display:none}
 </div>
 <div id="fade" aria-hidden="true"></div>
 <div id="panel" hidden><div id="sheet" role="dialog" aria-modal="true"></div></div>
-<canvas id="mini" aria-label="小地圖，點一下開啟大地圖" role="button" tabindex="0"></canvas><div id="miniN">北</div>
+<canvas id="mini" aria-label="小地圖，點一下開啟大地圖" role="button" tabindex="0"></canvas><div id="miniN">北</div><div id="miniTime" aria-hidden="true"></div>
 <div id="mapOv" hidden>
   <div id="mapBox">
     <canvas id="big" aria-label="燈芯島地圖，可拖曳與縮放"></canvas>
@@ -998,7 +999,7 @@ let wasHit=false,bumpT=0;let inside=false,layout=false,layMode='place',laySel=''
 const DOOR_IN={x:7.6,z:6.6};let last=performance.now(),walk=0,blockedAt=0,lastRegion='';
 function frame(now){
   const dt=Math.min(0.05,(now-last)/1000);last=now;const t=now/1000;
-  gameMin+=dt*1.6;{const di=Math.floor((gameMin-300)/1440)+1;if(di>day){day=di;newDay();}}$('clock').textContent=fmtClock();
+  gameMin+=dt*1.6;{const di=Math.floor((gameMin-300)/1440)+1;if(di>day){day=di;newDay();}}{const ct=fmtClock();$('clock').textContent=ct;$('miniTime').textContent=ct;}
 
   // move
   let mx=jx,mz=jy;
