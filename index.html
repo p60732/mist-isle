@@ -635,12 +635,15 @@ function hotbarUI(){seeMats();$('coinTxt').textContent=coins.toLocaleString('en-
   qDotUI();
 }
 function qDotUI(){const qd=$('questDot');if(qd)qd.hidden=!questClaimable();}
-$('hotbar').addEventListener('click',e=>{const b=e.target.closest('.slot');if(!b||!b.dataset.k)return;const k=b.dataset.k;
+function hotPress(e){const b=e.target.closest('.slot');if(!b||!b.dataset.k)return;const k=b.dataset.k;
   if(k==='stam'){if(stamina>=100){toast('體力已經是滿的。',1200);return;}inv.stam--;stamina=Math.min(100,stamina+40);staUI();hotbarUI();toast('喝了體力藥水，體力 +40。',1300);return;}
   if(k==='mush'){if(stamina>=100){toast('體力已經是滿的。',1200);return;}inv.mush--;stamina=Math.min(100,stamina+15);staUI();hotbarUI();toast('吃了紅帽蘑菇，體力 +15。',1300);}
   else if((k==='axe'||k==='pick')&&new Set(tools[k].map(x=>x.kind)).size>1){const a=tools[k];const cur=a[0].kind;const i=a.findIndex(x=>x.kind!==cur);a.unshift(a.splice(i,1)[0]);hotbarUI();toast('改用 '+a[0].kind+'（耐久 '+a[0].dur+' / '+a[0].max+'）',1600);}
   else if(k==='axe'||k==='pick'){const a=tools[k];toast(a[0].kind+'：耐久 '+a[0].dur+' / '+a[0].max+(a.length>1?'，備用 '+(a.length-1)+' 把（用壞會自動換上）':''),2000);}
-  else toast(NAME[k]+' '+inv[k]+' 瓶。走到灰霧邊緣就能使用。',1600);});
+  else toast(NAME[k]+' '+inv[k]+' 瓶。走到灰霧邊緣就能使用。',1600);}
+// pointerdown so a slot still works while the joystick finger is down (multi-touch)
+$('hotbar').addEventListener('pointerdown',e=>{e.preventDefault();hotPress(e);});
+$('hotbar').addEventListener('click',e=>{if(e.detail===0)hotPress(e);});
 // panels
 const panel=$('panel'),sheet=$('sheet');let craftSt='bench';let panelKind='',bagSel='wood';let bookTab='recipe';let chestMsg='';
 function openPanel(k){chestMsg='';panelKind=k;panel.hidden=false;jx=jy=0;knob.style.transform='';renderPanel();sheet.scrollTop=0;}
