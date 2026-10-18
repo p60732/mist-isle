@@ -39,11 +39,13 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--sky);color:var(-
 .advrow{width:100%;border:0;text-align:left;font:inherit;color:inherit;cursor:pointer;background:var(--paper);box-shadow:0 2px 0 var(--paper-edge)}
 .advrow.on{outline:3px solid var(--ink);outline-offset:-3px}
 .advhero{display:flex;gap:14px;align-items:center;margin:8px 0}
-#toast{z-index:60;left:12px;right:12px;top:calc(62px + env(safe-area-inset-top,0px));bottom:auto;transform:translate(0,8px);width:auto;box-sizing:border-box;padding:7px 14px;height:auto;display:block;overflow:hidden;white-space:nowrap;border-radius:14px;background:rgba(59,42,30,.5);color:#FFF8EC;box-shadow:0 2px 8px rgba(0,0,0,.18);font-size:15px;line-height:1.5;text-align:left;pointer-events:none;opacity:0;transition:opacity .3s,transform .3s}
-#toastTx{display:inline-block;white-space:nowrap}
-#toastTx.scroll{animation:tkr var(--dur,8s) linear infinite}
+#toast{z-index:60;left:12px;right:12px;top:calc(62px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:6px;pointer-events:none;background:none;box-shadow:none;border:0;padding:0;border-radius:0}
+.tl{flex:none;box-sizing:border-box;height:auto;padding:7px 14px;border-radius:14px;background:rgba(59,42,30,.5);color:#FFF8EC;box-shadow:0 2px 8px rgba(0,0,0,.18);font-size:15px;line-height:1.5;overflow:hidden;white-space:nowrap;transition:opacity .35s,transform .35s}
+.tl.old1{opacity:.6}.tl.old2{opacity:.3}
+.tl.out{opacity:0;transform:translateY(-6px)}
+.tl .tx{display:inline-block;white-space:nowrap}
+.tl .tx.scroll{animation:tkr var(--dur,8s) linear infinite}
 @keyframes tkr{from{transform:translateX(var(--w,300px))}to{transform:translateX(calc(-1 * var(--tw,0px)))}}
-#toast.on{opacity:1;transform:translate(0,0)}
 #joy{position:fixed;z-index:3;left:max(24px,calc(env(safe-area-inset-left,0px) + 12px));bottom:calc(28px + env(safe-area-inset-bottom,0px));width:120px;height:120px;border-radius:50%;background:rgba(255,248,236,.45);border:3px solid rgba(255,248,236,.9);touch-action:none}
 #knob{position:absolute;left:36px;top:36px;width:48px;height:48px;border-radius:50%;background:var(--paper);box-shadow:0 3px 0 var(--paper-edge)}
 #act{position:fixed;z-index:3;right:max(28px,calc(env(safe-area-inset-right,0px) + 16px));bottom:calc(40px + env(safe-area-inset-bottom,0px));width:96px;height:96px;border-radius:50%;border:0;background:var(--amber);box-shadow:0 5px 0 var(--amber-deep);color:#fff;font:700 19px var(--f-ui);cursor:pointer;touch-action:manipulation}
@@ -126,7 +128,7 @@ body.inside #mini,body.inside #miniN,body.inside #miniTime{display:none}
 #fade.on{opacity:1}
 .opt{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left}
 .two{display:flex;flex-direction:column;gap:8px}
-@media (prefers-reduced-motion:reduce){#toast{transition:none}#toastTx.scroll{animation:none}}
+@media (prefers-reduced-motion:reduce){.tl{transition:none}.tl .tx.scroll{animation:none}}
 #dark{position:fixed;inset:0;z-index:2;pointer-events:none;display:none;background:radial-gradient(circle at var(--dx,50%) var(--dy,50%),rgba(8,6,12,0) var(--dr,0px),rgba(8,6,12,.92) calc(var(--dr,0px) + 70px))}
 #dark.on{display:block}
 /* 抽卡動畫覆蓋層 */
@@ -217,7 +219,7 @@ body.inside #mini,body.inside #miniN,body.inside #miniTime{display:none}
   <button class="sbtn" type="button" data-p="quest"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4h11v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2h12"></path><path d="M7 4a2 2 0 0 0-2 2v10"></path></svg>任務<span class="dot" id="questDot" hidden></span></button>
 </div>
 <div id="hotbar" role="toolbar" aria-label="快捷列"></div>
-<div class="hud card" id="toast" role="status" aria-live="polite"><span id="toastTx"></span></div>
+<div class="hud" id="toast" role="status" aria-live="polite"></div>
 <div id="lay" hidden>
   <div class="row"><b style="font-size:17px;margin-right:auto">布置模式</b><span id="layBtns" class="row"></span>
     <button class="pbtn go" type="button" id="layDone">完成</button></div>
@@ -594,14 +596,19 @@ ring.rotation.x=-Math.PI/2;ring.position.y=0.2;scene.add(ring);
 
 // ---- UI ----
 const $=id=>document.getElementById(id);
-const toastEl=$('toast');let toastT=0;
-const toastTx=$('toastTx');
-function toast(msg,ms){const txt=String(msg).replace(/\n+/g,'　');toastTx.textContent=txt;toastTx.classList.remove('scroll');
-  toastEl.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>toastEl.classList.remove('on'),ms||2800);
-  // 單行跑馬燈：文字比框寬時從右滾到左
-  requestAnimationFrame(()=>{const w=toastEl.clientWidth-28,tw=toastTx.scrollWidth;if(tw<=w)return;
-    toastTx.style.setProperty('--w',w+'px');toastTx.style.setProperty('--tw',tw+'px');
-    toastTx.style.setProperty('--dur',((w+tw)/60).toFixed(1)+'s');toastTx.classList.add('scroll');});}
+const toastEl=$('toast');const TOAST_MAX=3;
+// 提示：最新在最上，舊的往下漸淡，最多同時 3 條；每條各自單行跑馬燈
+function toast(msg,ms){const txt=String(msg).replace(/\n+/g,'　');
+  const row=document.createElement('div');row.className='tl';
+  const tx=document.createElement('span');tx.className='tx';tx.textContent=txt;row.appendChild(tx);
+  toastEl.insertBefore(row,toastEl.firstChild);
+  const rows=[...toastEl.querySelectorAll('.tl:not(.out)')];
+  rows.forEach((r,k)=>{r.classList.toggle('old1',k===1);r.classList.toggle('old2',k===2);});
+  for(let k=TOAST_MAX;k<rows.length;k++)rows[k].remove();
+  requestAnimationFrame(()=>{const w=row.clientWidth-28,tw=tx.scrollWidth;if(tw<=w)return;
+    tx.style.setProperty('--w',w+'px');tx.style.setProperty('--tw',tw+'px');
+    tx.style.setProperty('--dur',((w+tw)/60).toFixed(1)+'s');tx.classList.add('scroll');});
+  setTimeout(()=>{row.classList.add('out');setTimeout(()=>row.remove(),400);},ms||2800);}
 const ICON={
  moss:'<path d="M6 40 Q10 24 24 22 Q38 24 42 40 Z" fill="#6F9A4E"/><circle cx="16" cy="32" r="3" fill="#8DB86A"/><circle cx="27" cy="28" r="3.5" fill="#8DB86A"/><circle cx="33" cy="36" r="2.5" fill="#A8CF82"/>',
  fern:'<path d="M24 44 V8" stroke="#4E7A3C" stroke-width="2" fill="none"/><path d="M24 12 Q14 14 10 22 Q18 20 24 20 Z M24 12 Q34 14 38 22 Q30 20 24 20 Z M24 22 Q15 24 12 32 Q20 30 24 30 Z M24 22 Q33 24 36 32 Q28 30 24 30 Z M24 32 Q18 33 16 40 Q22 38 24 38 Z M24 32 Q30 33 32 40 Q26 38 24 38 Z" fill="#7FB069"/>',
