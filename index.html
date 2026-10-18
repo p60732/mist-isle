@@ -597,7 +597,7 @@ function seeMats(){TRIAL_MATS.forEach(k=>{if(!seen.has(k)&&((inv[k]||0)>0||(stor
   const lv=tierNow();if(lv>tierShownLv){tierShownLv=lv;toast('研究進度提升！第 '+lv+' 級配方已解鎖，到配方書看看。',3200);}}
 function bonusGain(k){if(!accWorn.includes('necklace')||!isNight()||Math.random()>=0.1)return false;if(!fits({k,n:1}))return false;inv[k]=(inv[k]||0)+1;return true;}
 const _dv=new THREE.Vector3(),_dv2=new THREE.Vector3();
-function caveSight(){return accWorn.includes('lamp')?5.2:2.4;}
+function caveSight(){return accWorn.includes('lamp')?5.7:1.9;}
 // cave: dark overlay with a lit circle around the player (wider with 發光項鍊)
 function updateDark(){const dk=$('dark');if(!dk)return;dk.classList.toggle('on',inCave);if(!inCave)return;
   const px=player.position.x,pz=player.position.z,R=caveSight();
