@@ -558,7 +558,7 @@ const QUESTS=[
 ];
 let dq={day:1,prog:{},claimed:{}};
 function todayQuests(){const s=(day-1)%QUESTS.length;return [0,1,2].map(i=>QUESTS[(s+i)%QUESTS.length]);}
-function qAdd(id){if(dq.day!==day)dq={day,prog:{},claimed:{}};dq.prog[id]=(dq.prog[id]||0)+1;}
+function qAdd(id){if(dq.day!==day)dq={day,prog:{},claimed:{}};dq.prog[id]=(dq.prog[id]||0)+1;if(typeof qDotUI==='function')qDotUI();}
 function rewardText(r){return r.t==='stam'?'體力藥水 ×1':r.t==='coin'?'金幣 +'+r.n:'寶箱 ×1（到背包開啟）';}
 function openOneChest(){if(!inv.chest)return '';inv.chest--;const c=30+Math.floor(Math.random()*31);coins+=c;let msg='寶箱：金幣 +'+c;
   if(Math.random()<0.25){const k=Math.random()<0.5?'crys':'iron';inv[k]=(inv[k]||0)+1;msg+='，還開出'+NAME[k]+' ×1！';}return msg;}
@@ -632,8 +632,9 @@ function hotbarUI(){seeMats();$('coinTxt').textContent=coins.toLocaleString('en-
     const extra=tool?'<span class="dur"><i style="width:'+Math.round(t0.dur/t0.max*100)+'%;background:'+(t0.dur/t0.max<0.3?'#E0663F':'#6DBB58')+'"></i></span>'+(v.length>1?'<span class="cnt">×'+v.length+'</span>':''):'<span class="n">'+v+'</span>';
     return '<button class="slot'+(usedSlot===k?' used':'')+'" type="button" data-k="'+k+'" aria-label="'+(tool?t0.kind:NAME[k])+(tool?'，耐久 '+t0.dur+'，共 '+v.length+' 把':'，'+v+' 個')+'">'+svg(k,34)+extra+'</button>';
   }).join('');
-  const qd=$('questDot');if(qd)qd.hidden=!questClaimable();
+  qDotUI();
 }
+function qDotUI(){const qd=$('questDot');if(qd)qd.hidden=!questClaimable();}
 $('hotbar').addEventListener('click',e=>{const b=e.target.closest('.slot');if(!b||!b.dataset.k)return;const k=b.dataset.k;
   if(k==='stam'){if(stamina>=100){toast('體力已經是滿的。',1200);return;}inv.stam--;stamina=Math.min(100,stamina+40);staUI();hotbarUI();toast('喝了體力藥水，體力 +40。',1300);return;}
   if(k==='mush'){if(stamina>=100){toast('體力已經是滿的。',1200);return;}inv.mush--;stamina=Math.min(100,stamina+15);staUI();hotbarUI();toast('吃了紅帽蘑菇，體力 +15。',1300);}
@@ -898,7 +899,7 @@ function enterCave(){inCave=true;document.body.classList.add('inside');caveGoTo(
 function exitCave(){inCave=false;caveLv.forEach(l=>{l.group.visible=false;});caveLevel=0;document.body.classList.remove('inside');player.position.set(CAVE_E.x,0,CAVE_E.z+4.3);player.rotation.y=0;camPos.set(CAVE_E.x,21,CAVE_E.z+25);curveU.value=curveOn?CURVE:0;scene.background=new THREE.Color(SKY);scene.fog=new THREE.Fog(SKY,95,200);saveGame();}
 function newDay(){caveOres.forEach(o=>{o.state='full';o.hits=0;o.parts.forEach(m=>{m.visible=true;});o.col.x=o.x;o.col.z=o.z;o.col.r=0.95;});trees.forEach(t=>{t.wood=3;t.branches=4;t.stumpHits=0;if(t.state==='gone'){relocateTree(t);return;}if(t.state!=='up'){t.state='up';t.hits=0;t.t=0;t.g.rotation.z=0;t.crown.forEach(c=>{c.visible=true;});t.cut.visible=false;t.trunk.scale.y=1;t.trunk.position.y=0.8;t.col.r=0.75*t.s;}});
   rocks.forEach(r=>{if(r.state==='gone'){relocateRock(r);return;}r.state='full';r.hits=0;r.regrow=0;r.m.scale.set(r.sc[0],r.sc[1],r.sc[2]);rockTint(r);});
-  mushes.forEach(m=>{if(!m.alive){m.alive=true;scene.add(m.g);}});nodes.forEach(n=>{if(n.kind!=='stone')n.taken=false;});resetStones(10);}
+  mushes.forEach(m=>{if(!m.alive){m.alive=true;scene.add(m.g);}});nodes.forEach(n=>{if(n.kind!=='stone')n.taken=false;});resetStones(10);qDotUI();}
 function sleepUntil(hh){closePanel();const bed=items.find(i=>i.id==='f_bed');const c=centerOf(bed.id,bed.ix,bed.iz,bed.rot);
   const th=bed.rot*Math.PI/2;sitting=null;
   // pillow sits 0.95 from bed centre toward the headboard; head centre (local y 1.85) must land on it
