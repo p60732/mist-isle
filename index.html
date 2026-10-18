@@ -267,7 +267,7 @@ part(new THREE.BoxGeometry(1.1,1.9,0.2),toon(0x8A5A36),0,0.95,2.15,house,0.06);
 part(new THREE.BoxGeometry(0.9,0.9,0.2),toon(0x9FD6EC),1.6,2.1,2.15,house,0.08);
 // workshop yard: stone floor, sign, chimney, three stations
 const yard=new THREE.Mesh(new THREE.CircleGeometry(7.5,28),toon(0xC9B48E));yard.rotation.x=-Math.PI/2;yard.position.set(8.5,0.04,9);scene.add(yard);
-for(let i=0;i<46;i++){const a=rnd()*Math.PI*2,r=Math.sqrt(rnd())*7;const st=new THREE.Mesh(new THREE.CylinderGeometry(0.45+rnd()*0.35,0.5+rnd()*0.35,0.06,6),toon(rnd()<0.5?0xB7A07A:0xD8C7A2));st.position.set(8.5+Math.cos(a)*r,0.06,9+Math.sin(a)*r);st.rotation.y=rnd()*3;scene.add(st);}
+for(let i=0;i<46;i++){const a=rnd()*Math.PI*2,r=Math.sqrt(rnd())*7;const st=new THREE.Mesh(new THREE.CylinderGeometry(0.45+rnd()*0.35,0.5+rnd()*0.35,0.06,6),toon(rnd()<0.5?0xB7A07A:0xD8C7A2));st.position.set(8.5+Math.cos(a)*r,0.075,9+Math.sin(a)*r);st.rotation.y=rnd()*3;scene.add(st);}
 const chim=part(new THREE.BoxGeometry(0.8,2.2,0.8),toon(0x9A6B52),1.4,5.2,-0.6,house,0.08);
 const smokeM=bend(new THREE.MeshBasicMaterial({color:0xFFFFFF,transparent:true,opacity:0.6,depthWrite:false}));const smokes=[];
 for(let i=0;i<4;i++){const m=new THREE.Mesh(new THREE.SphereGeometry(0.45,8,6),smokeM);house.add(m);smokes.push(m);}
@@ -277,13 +277,13 @@ const STATIONS=[];
 // ===== interior (far away from the island) =====
 const RX=600,RZ=600,TILE=1.5,NT=10,HALF=TILE*NT/2;
 const room=new THREE.Group();room.position.set(RX,0,RZ);scene.add(room);
-const floor=new THREE.Mesh(new THREE.PlaneGeometry(TILE*NT,TILE*NT),toon(0xB98552));floor.rotation.x=-Math.PI/2;floor.position.y=0.01;room.add(floor);
-for(let i=0;i<NT;i++){const s=new THREE.Mesh(new THREE.PlaneGeometry(TILE*NT,0.05),toon(0x8A5A36));s.rotation.x=-Math.PI/2;s.position.set(0,0.015,-HALF+i*TILE);room.add(s);}
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(TILE*NT,TILE*NT),toon(0xB98552));floor.rotation.x=-Math.PI/2;floor.position.y=0;room.add(floor);
+for(let i=0;i<NT;i++){const s=new THREE.Mesh(new THREE.PlaneGeometry(TILE*NT,0.05),toon(0x8A5A36));s.rotation.x=-Math.PI/2;s.position.set(0,0.03,-HALF+i*TILE);room.add(s);}
 part(new THREE.BoxGeometry(TILE*NT+0.8,4,0.4),toon(0xF3E3C3),0,2,-HALF-0.2,room,0.02);
 part(new THREE.BoxGeometry(0.4,4,TILE*NT),toon(0xEAD7B3),-HALF-0.2,2,0,room,0.02);
 part(new THREE.BoxGeometry(2.4,1.6,0.1),toon(0x9FD6EC),1.5,2.4,-HALF+0.02,room,0.04);
 part(new THREE.BoxGeometry(0.1,1.6,2.0),toon(0x9FD6EC),-HALF+0.02,2.3,-1.5,room,0.04);
-const mat=new THREE.Mesh(new THREE.PlaneGeometry(2,1),toon(0xC8762E));mat.rotation.x=-Math.PI/2;mat.position.set(0,0.02,HALF-0.6);room.add(mat);
+const mat=new THREE.Mesh(new THREE.PlaneGeometry(2,1),toon(0xC8762E));mat.rotation.x=-Math.PI/2;mat.position.set(0,0.045,HALF-0.6);room.add(mat);
 
 const grid=new THREE.GridHelper(TILE*NT,NT,0x7E5FC4,0x7E5FC4);grid.position.y=0.03;grid.material.transparent=true;grid.material.opacity=0.45;grid.visible=false;room.add(grid);
 const DOORMAT={x:RX,z:RZ+HALF-0.6};
