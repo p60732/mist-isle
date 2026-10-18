@@ -28,7 +28,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--sky);color:var(-
 .dot{width:14px;height:14px;border-radius:50%}
 .toggle{pointer-events:auto;border:0;font:inherit;font-size:12px;color:var(--ink);cursor:pointer}
 .toggle:focus-visible,#act:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
-#toast{z-index:6;left:12px;right:96px;top:calc(36% + env(safe-area-inset-top,0px));bottom:auto;transform:translate(0,8px);width:auto;max-width:none;box-sizing:border-box;padding:10px 16px;border-radius:14px;background:rgba(59,42,30,.78);color:#FFF8EC;box-shadow:0 2px 8px rgba(0,0,0,.18);font-size:15px;line-height:1.55;text-align:center;pointer-events:none;opacity:0;transition:opacity .3s,transform .3s}
+#toast{z-index:6;left:12px;right:96px;top:calc(112px + env(safe-area-inset-top,0px));bottom:auto;transform:translate(0,8px);width:auto;max-width:none;box-sizing:border-box;padding:10px 16px;white-space:normal;overflow-wrap:break-word;height:auto;display:block;border-radius:14px;background:rgba(59,42,30,.78);color:#FFF8EC;box-shadow:0 2px 8px rgba(0,0,0,.18);font-size:15px;line-height:1.55;text-align:center;pointer-events:none;opacity:0;transition:opacity .3s,transform .3s}
 #toast.on{opacity:1;transform:translate(0,0)}
 #joy{position:fixed;z-index:3;left:max(24px,calc(env(safe-area-inset-left,0px) + 12px));bottom:calc(28px + env(safe-area-inset-bottom,0px));width:120px;height:120px;border-radius:50%;background:rgba(255,248,236,.45);border:3px solid rgba(255,248,236,.9);touch-action:none}
 #knob{position:absolute;left:36px;top:36px;width:48px;height:48px;border-radius:50%;background:var(--paper);box-shadow:0 3px 0 var(--paper-edge)}
@@ -49,7 +49,7 @@ body.laying #act2{display:none!important}
 #mapTitle{position:absolute;left:12px;top:12px;font-size:15px;font-weight:700}
 #mapHint{position:absolute;left:12px;bottom:12px;font-size:12px;color:var(--ink-soft)}
 #tr .money{display:flex;align-items:center;gap:8px;font-weight:700;font-size:16px;border-radius:999px;padding:6px 14px 6px 8px}
-#tr .sta{display:flex;align-items:center;gap:8px;border-radius:999px;padding:6px 10px;font-size:12px;color:var(--ink-soft)}
+#staHud{top:calc(60px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;border-radius:999px;padding:6px 10px;font-size:12px;color:var(--ink-soft);white-space:nowrap}
 #staBar{width:86px;height:10px;border-radius:5px;background:#EADCC2;overflow:hidden}#staFill{height:10px;background:#6DBB58;width:100%;transition:width .3s}
 #side{position:fixed;z-index:3;right:max(12px,env(safe-area-inset-right,0px));top:calc(112px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:10px}
 .sbtn{position:relative;width:58px;height:58px;border-radius:18px;border:0;background:var(--paper);box-shadow:0 3px 0 var(--paper-edge);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:700 11px var(--f-ui);color:var(--ink);cursor:pointer;padding:0}
@@ -124,12 +124,12 @@ body.inside #mini,body.inside #miniN,body.inside #miniTime{display:none}
 <div id="dark" aria-hidden="true"></div>
 
 <div class="hud" id="tl">
-  <div class="card"><div class="t1" id="clock">春季 · 第 1 天 · 07:00</div><div class="t2" id="region">燈芯島 · 小谷村</div></div>
+  <div class="card"><div class="t2" id="region">燈芯島 · 小谷村</div></div>
 </div>
 <div class="hud" id="tr">
   <div class="card money"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="9" fill="#F7C948" stroke="#C99A1E" stroke-width="2"></circle><rect x="9.5" y="6" width="3" height="10" rx="1.5" fill="#C99A1E"></rect></svg><span id="coinTxt">0</span></div>
-  <div class="card sta">體力<div id="staBar"><div id="staFill"></div></div></div>
 </div>
+<div class="hud card sta" id="staHud">體力<div id="staBar"><div id="staFill"></div></div></div>
 <div id="side">
   <button class="sbtn" type="button" data-p="bag"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6z"></path><path d="M9 8V6a3 3 0 0 1 6 0v2"></path></svg>背包</button>
   <button class="sbtn" type="button" data-p="craft"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"></path><path d="M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"></path></svg>配方書</button>
@@ -999,7 +999,7 @@ let wasHit=false,bumpT=0;let inside=false,layout=false,layMode='place',laySel=''
 const DOOR_IN={x:7.6,z:6.6};let last=performance.now(),walk=0,blockedAt=0,lastRegion='';
 function frame(now){
   const dt=Math.min(0.05,(now-last)/1000);last=now;const t=now/1000;
-  gameMin+=dt*1.6;{const di=Math.floor((gameMin-300)/1440)+1;if(di>day){day=di;newDay();}}{const ct=fmtClock();$('clock').textContent=ct;$('miniTime').textContent=ct;}
+  gameMin+=dt*1.6;{const di=Math.floor((gameMin-300)/1440)+1;if(di>day){day=di;newDay();}}{$('miniTime').textContent=fmtClock();}
 
   // move
   let mx=jx,mz=jy;
