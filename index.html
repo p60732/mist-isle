@@ -28,8 +28,8 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--sky);color:var(-
 .dot{width:14px;height:14px;border-radius:50%}
 .toggle{pointer-events:auto;border:0;font:inherit;font-size:12px;color:var(--ink);cursor:pointer}
 .toggle:focus-visible,#act:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
-#toast{z-index:6;left:50%;top:calc(30% + env(safe-area-inset-top,0px));bottom:auto;transform:translate(-50%,8px);width:max-content;max-width:min(calc(100vw - 32px),420px);box-sizing:border-box;font-size:15px;line-height:1.55;text-align:center;opacity:0;transition:opacity .3s,transform .3s}
-#toast.on{opacity:1;transform:translate(-50%,0)}
+#toast{z-index:6;left:12px;right:96px;top:calc(36% + env(safe-area-inset-top,0px));bottom:auto;transform:translate(0,8px);width:auto;max-width:none;box-sizing:border-box;padding:10px 16px;border-radius:14px;background:rgba(59,42,30,.78);color:#FFF8EC;box-shadow:0 2px 8px rgba(0,0,0,.18);font-size:15px;line-height:1.55;text-align:center;pointer-events:none;opacity:0;transition:opacity .3s,transform .3s}
+#toast.on{opacity:1;transform:translate(0,0)}
 #joy{position:fixed;z-index:3;left:max(24px,calc(env(safe-area-inset-left,0px) + 12px));bottom:calc(28px + env(safe-area-inset-bottom,0px));width:120px;height:120px;border-radius:50%;background:rgba(255,248,236,.45);border:3px solid rgba(255,248,236,.9);touch-action:none}
 #knob{position:absolute;left:36px;top:36px;width:48px;height:48px;border-radius:50%;background:var(--paper);box-shadow:0 3px 0 var(--paper-edge)}
 #act{position:fixed;z-index:3;right:max(28px,calc(env(safe-area-inset-right,0px) + 16px));bottom:calc(40px + env(safe-area-inset-bottom,0px));width:96px;height:96px;border-radius:50%;border:0;background:var(--amber);box-shadow:0 5px 0 var(--amber-deep);color:#fff;font:700 19px var(--f-ui);cursor:pointer;touch-action:manipulation}
