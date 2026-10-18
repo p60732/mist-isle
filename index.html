@@ -32,6 +32,10 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--sky);color:var(-
 .toggle{pointer-events:auto;border:0;font:inherit;font-size:12px;color:var(--ink);cursor:pointer}
 .toggle:focus-visible,#act:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .pt{display:inline-flex;align-items:center;justify-content:center;border-radius:14px;color:#fff;font-weight:700;text-shadow:0 1px 0 rgba(0,0,0,.25);box-shadow:0 2px 0 var(--paper-edge);flex:none}
+.trail{position:relative;height:60px;border-radius:14px;overflow:hidden;margin:8px 0 6px}
+.trail .road{position:absolute;left:10px;right:10px;top:34px;height:8px;border-radius:4px}
+.walker{position:absolute;top:22px;transform:translateX(-50%);display:flex;gap:2px;transition:left .4s linear;white-space:nowrap}
+.wkd{width:20px;height:20px;border-radius:7px;color:#fff;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 1px 0 rgba(0,0,0,.2)}
 .advrow{width:100%;border:0;text-align:left;font:inherit;color:inherit;cursor:pointer;background:var(--paper);box-shadow:0 2px 0 var(--paper-edge)}
 .advrow.on{outline:3px solid var(--ink);outline-offset:-3px}
 .advhero{display:flex;gap:14px;align-items:center;margin:8px 0}
@@ -686,7 +690,7 @@ $('hotbar').addEventListener('click',e=>{if(e.detail===0)hotPress(e);});
 // panels
 const panel=$('panel'),sheet=$('sheet');let craftSt='bench';let panelKind='',bagSel='wood';let bookTab='recipe';let chestMsg='';
 // ===== 旅人小屋：招募、派遣、收購（M3）=====
-const ADV=[ // 占位角色（名字與設定之後再換）
+const ADV=[ // 占位角色（名字與台詞之後再換）
  {id:'a1',name:'小風',r:'R',c:'#9FD6EC',line:'路上撿到好多漂亮的石頭！'},
  {id:'a2',name:'木鈴',r:'R',c:'#B7D98A',line:'林子裡有點涼，不過很舒服。'},
  {id:'a3',name:'岩生',r:'R',c:'#C9B48E',line:'礦脈比我想像中硬呢。'},
@@ -694,12 +698,28 @@ const ADV=[ // 占位角色（名字與設定之後再換）
  {id:'a5',name:'露珠',r:'SR',c:'#7FC8E8',line:'晨露很快就會蒸發，我有趕在前面採到。'},
  {id:'a6',name:'星砂',r:'SR',c:'#F7C948',line:'金砂閃閃的，像撒了一地星星。'},
  {id:'a7',name:'燈火',r:'SR',c:'#FFD27A',line:'帶著燈，洞裡再暗也不怕。'},
- {id:'a8',name:'霧影',r:'SSR',c:'#A9B2BE',line:'我來自霧的另一邊，那裡的風很安靜。'}];
-const ADV_PULL_COST=100,ADV_TOKEN_PULL=10,ADV_PITY=50,ADV_PARTY_MAX=5,ADV_STAR_MAX=5,ADV_EXCH_N=3;
-const ADV_RPW={R:10,SR:20,SSR:35};   // 稀有度基礎戰力
-const ADV_NEED=[60,120,200];         // 任務難度 1/2/3 的需要戰力
-const ADV_TIME=[1,3,6];              // 派遣時間（遊戲內小時）
-const GEAR=[ // 裝備：用材料在旅人小屋製作
+ {id:'a8',name:'霧影',r:'SSR',c:'#A9B2BE',line:'我來自霧的另一邊，那裡的風很安靜。'},
+ {id:'a9',name:'雲豆',r:'R',c:'#E8D4F0',line:'雲朵底下的草地最軟了。'},
+ {id:'a10',name:'溪石',r:'R',c:'#B5DCC9',line:'溪水流過的石頭會發亮喔。'},
+ {id:'a11',name:'松果',r:'R',c:'#D9B88F',line:'撿到的松果要留一顆給小鳥。'},
+ {id:'a12',name:'小蕨',r:'R',c:'#A8D5A2',line:'蕨園的風總是帶著甜味。'},
+ {id:'a13',name:'螢火',r:'R',c:'#F5E08A',line:'天黑了就換我來帶路。'},
+ {id:'a14',name:'栗子',r:'R',c:'#C98D6B',line:'這次找到的果子很甜！'},
+ {id:'a15',name:'霜葉',r:'R',c:'#CFE3EE',line:'早上的霜會在葉子上畫出花紋。'},
+ {id:'a16',name:'草笛',r:'R',c:'#B9E4A8',line:'吹著草笛走路，腳步會變輕。'},
+ {id:'a17',name:'月見',r:'SR',c:'#C7B8F0',line:'月亮出來的時候，蘑菇最漂亮。'},
+ {id:'a18',name:'潮音',r:'SR',c:'#8ECDE6',line:'海邊的風會告訴我該去哪裡。'},
+ {id:'a19',name:'雲海',r:'SSR',c:'#E6F0FA',line:'站在山頂，能看見整座島的霧。'},
+ {id:'a20',name:'星河',r:'SSR',c:'#5C6BC0',line:'夜裡的星砂，我會一顆一顆收好。'}];
+const ADV_PULL_COST=100,ADV_TOKEN_PULL=10,ADV_PITY=50,ADV_PARTY_MAX=5,ADV_STAR_MAX=5,ADV_EXCH_N=3,ADV_ROSTER_MAX=60,ADV_PRESETS=3;
+const ADV_RELEASE={R:1,SR:3,SSR:8};       // 解約換信物
+const ADV_RPW={R:10,SR:20,SSR:35};        // 稀有度基礎戰力
+const ADV_RANK={R:1,SR:2,SSR:3};
+const ADV_NEED=[60,120,200];              // 任務難度 1/2/3 的需要戰力
+const ADV_TIME=[1,3,6];                   // 派遣時間（遊戲內小時）
+const TERR={forest:{name:'森林',bg:'#8FBF7A',road:'#C9B48E'},cave:{name:'礦洞',bg:'#8A7F74',road:'#5E554C'},shore:{name:'水邊',bg:'#9FD6EC',road:'#EAD7A6'},fog:{name:'霧地',bg:'#B9C0CB',road:'#E4E8EE'}};
+const TASK_TERR={採集林子:'forest',整理蕨園:'forest',巡視礦洞:'cave',尋找失物:'cave',清理苔石:'cave',護送貨物:'shore',撿拾晨露:'shore',探訪霧邊:'fog'};
+const GEAR=[ // 裝備：在金工台的打鐵舖製作
  {id:'g_wood_sword',slot:'weapon',name:'木劍',pw:8,cost:{wood:3}},
  {id:'g_stone_blade',slot:'weapon',name:'石刃',pw:14,cost:{stone:2,branch:1}},
  {id:'g_cloth_vest',slot:'armor',name:'麻布背心',pw:8,cost:{cloth:2,flax:2}},
@@ -707,10 +727,71 @@ const GEAR=[ // 裝備：用材料在旅人小屋製作
  {id:'g_dew_charm',slot:'acc',name:'晨露墜',pw:6,cost:{dew:2}},
  {id:'g_moon_charm',slot:'acc',name:'月光墜',pw:10,cost:{moon:2}}];
 const GEAR_SLOT={weapon:'武器',armor:'防具',acc:'飾品'};
-const DTASK_NAMES=['採集林子','巡視礦洞','護送貨物','尋找失物','清理苔石','探訪霧邊','整理蕨園','撿拾晨露'];
-let adv={},pity=0,disp=[],token=0,advSel=[],gearInv={},advDetail=null,advTask=null,advSlot=null,exTab='sell';
-const SELL_PRICE={wood:2,stone:2,branch:1,clay:2,iron:4,crys:6,mush:2,moon:5,dew:4,flax:2,cloth:3,bug:2,honey:4,copper:5,gold:8,moss:3,fern:2};
+const DTASK_NAMES=Object.keys(TASK_TERR);
+let adv={},pity=0,disp=[],token=0,gearInv={},presets=[[],[],[]];
+let advDetail=null,advTask=null,advSlot=null,exTab='sell',innTab='pull',advPreset=0,advEditPreset=null,advReleaseArmed=null,dispReadyShown=0;
+const advOf=id=>ADV.find(x=>x.id===id);
+const gearOf=id=>GEAR.find(g=>g.id===id);
+// 每天固定的 6 個派遣任務（同一天所有人相同）
+function dayTasks(){let s=(Math.imul(day,2654435761)^0x9E3779B9)>>>0;const rnd=()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296;};
+  const names=DTASK_NAMES.slice(),out=[];
+  for(let i=0;i<6;i++){const nm=names.splice(Math.floor(rnd()*names.length),1)[0];const diff=1+Math.floor(rnd()*3);const hours=ADV_TIME[Math.floor(rnd()*3)];
+    out.push({i,name:nm,terrain:TASK_TERR[nm],diff,hours,need:ADV_NEED[diff-1],n:diff+(hours>=3?1:0)+(hours>=6?1:0)});}
+  return out;}
+function advPower(id){const a=adv[id],m=advOf(id);if(!a||!m)return 0;let p=ADV_RPW[m.r]+a.stars*8;
+  Object.values(a.eq||{}).forEach(g=>{const gg=g&&gearOf(g);if(gg)p+=gg.pw;});return p;}
+function partyPower(ids){return ids.reduce((s,id)=>s+advPower(id),0);}
+function advChance(power,need){return Math.max(0.05,Math.min(0.95,power/need*0.8));}
+function portrait(m,sz){return '<span class="pt" style="background:'+m.c+';width:'+sz+'px;height:'+sz+'px;font-size:'+Math.round(sz*0.42)+'px">'+m.name[0]+'</span>';}
+function advBusy(){return new Set(disp.flatMap(d=>d.ids));}
+// 招募：金幣抽與信物抽共用保底；冒險者滿額時新角色自動解約換信物
+function advDraw(){pity++;const r=Math.random();
+  const rar=(pity>=ADV_PITY||r<0.03)?'SSR':r<0.20?'SR':'R';if(rar==='SSR')pity=0;
+  const pool=ADV.filter(a=>a.r===rar);const a=pool[Math.floor(Math.random()*pool.length)];
+  if(adv[a.id]){adv[a.id].stars=Math.min(ADV_STAR_MAX,adv[a.id].stars+1);return adv[a.id].stars>=ADV_STAR_MAX?'重複抽到「'+a.name+'」，已達 5 星！':'重複抽到「'+a.name+'」，升為 ★'+adv[a.id].stars+'。';}
+  if(Object.keys(adv).length>=ADV_ROSTER_MAX){token+=ADV_RELEASE[a.r];return '冒險者已滿，「'+a.name+'」自動解約，換得 '+ADV_RELEASE[a.r]+' 個信物。';}
+  adv[a.id]={stars:1,eq:{}};return '新的冒險者加入：'+a.name+'（'+rar+'）！';}
+function advPull(){if(coins<ADV_PULL_COST){toast('金幣不足（單抽需要 '+ADV_PULL_COST+' 金幣）。',1600);return;}
+  coins-=ADV_PULL_COST;const msg=advDraw();hotbarUI();saveGame();renderPanel();toast(msg,2400);}
+function advPullToken(){if(token<ADV_TOKEN_PULL){toast('信物不足（需要 '+ADV_TOKEN_PULL+' 個信物）。',1600);return;}
+  token-=ADV_TOKEN_PULL;const msg=advDraw();hotbarUI();saveGame();renderPanel();toast('用信物抽卡：'+msg,2400);}
+function advStart(){if(advTask==null){toast('請先選擇派遣任務。',1400);return;}const t=dayTasks()[advTask];if(!t)return;
+  const busy=advBusy();const ids=presets[advPreset].filter(id=>adv[id]&&!busy.has(id)).slice(0,ADV_PARTY_MAX);
+  if(!ids.length){toast('這組隊伍沒有可派遣的冒險者，請到「派遣隊伍」設定。',1800);return;}
+  const power=partyPower(ids),chance=advChance(power,t.need),ok=Math.random()<chance;
+  disp.push({ids,task:{name:t.name,terrain:t.terrain,diff:t.diff,hours:t.hours,need:t.need,n:t.n},power,chance,ok,start:gameMin,end:gameMin+t.hours*60});
+  advTask=null;saveGame();renderPanel();toast('派遣出發了，'+t.hours+' 小時後回來。',1800);}
+function advClaim(i){const d=disp[i];if(!d||gameMin<d.end)return;
+  const snap=Object.assign({},inv);const lines=[];const n=d.ok?d.task.n:Math.max(1,Math.floor(d.task.n/2));
+  d.ids.forEach(id=>{const a=advOf(id);lines.push(a.name+'：'+a.line);});
+  for(let j=0;j<n;j++){const k=TRIAL_MATS[Math.floor(Math.random()*TRIAL_MATS.length)];inv[k]=(inv[k]||0)+1;}
+  if(slotsUsed()>BAG_MAX){inv=snap;toast(FULL,2000);return;}
+  disp.splice(i,1);hotbarUI();saveGame();renderPanel();toast((d.ok?'任務成功':'任務失敗（只拿到一半）')+'：'+d.task.name+'，戰利品 '+n+' 個已放進背包。\n'+lines.join('\n'),3600);}
+function advRelease(id){if(!adv[id])return;const m=advOf(id);
+  if(advBusy().has(id)){toast('派遣中的冒險者不能解約。',1400);return;}
+  if(advReleaseArmed!==id){advReleaseArmed=id;renderPanel();toast('再按一次確認解約「'+m.name+'」。',1600);return;}
+  Object.values(adv[id].eq||{}).forEach(g=>{if(g)gearInv[g]=(gearInv[g]||0)+1;});
+  presets=presets.map(p=>p.filter(x=>x!==id));delete adv[id];token+=ADV_RELEASE[m.r];
+  advReleaseArmed=null;advDetail=null;innTab='roster';hotbarUI();saveGame();renderPanel();
+  toast('「'+m.name+'」已解約，換得 '+ADV_RELEASE[m.r]+' 個信物。',2000);}
+function gearEquip(aid,slot,gid){const a=adv[aid];if(!a)return;a.eq=a.eq||{};
+  const old=a.eq[slot];if(old)gearInv[old]=(gearInv[old]||0)+1;
+  if(gid){gearInv[gid]--;if(gearInv[gid]<=0)delete gearInv[gid];a.eq[slot]=gid;}else a.eq[slot]=null;
+  advSlot=null;saveGame();renderPanel();}
+// 派遣進度：依時間推算小人在路徑上的位置
+function dispP(d){const span=Math.max(1,d.end-(d.start!=null?d.start:d.end-d.task.hours*60));const st=d.start!=null?d.start:d.end-d.task.hours*60;return Math.max(0,Math.min(1,(gameMin-st)/span));}
+function updateDispProgress(){if(panelKind!=='inn'||innTab!=='task'||advDetail)return;
+  document.querySelectorAll('[data-wk]').forEach(el=>{const d=disp[+el.dataset.wk];if(d)el.style.left=(dispP(d)*100)+'%';});
+  const rc=disp.filter(d=>gameMin>=d.end).length;if(rc!==dispReadyShown){dispReadyShown=rc;renderPanel();}}
+function dispProgressHTML(d,i){const p=dispP(d),ready=gameMin>=d.end,T=TERR[d.task.terrain]||TERR.forest;
+  const walkers=d.ids.map(id=>{const m=advOf(id);return '<span class="wkd" style="background:'+m.c+'">'+m.name[0]+'</span>';}).join('');
+  return '<div class="rec" style="display:block"><div class="tx"><span class="nm">'+d.task.name+'　'+'★'.repeat(d.task.diff)+'　'+T.name+'</span><span class="need">'+(ready?'已回來':'還剩約 '+Math.max(0,Math.ceil((d.end-gameMin)/60))+' 小時')+'</span></div>'+
+    '<div class="trail" style="background:'+T.bg+'"><div class="road" style="background:'+T.road+'"></div><span class="walker" data-wk="'+i+'" style="left:'+(p*100)+'%">'+walkers+'</span></div>'+
+    '<div class="row"><button class="pbtn go" type="button" data-x="claimdisp" data-i="'+i+'"'+(ready?'':' disabled')+'>領取</button></div></div>';}
 function sellMat(k,all){const n=all?(inv[k]||0):1;if(n<=0)return;inv[k]-=n;coins+=SELL_PRICE[k]*n;hotbarUI();saveGame();renderPanel();toast('賣出'+NAME[k]+' ×'+n+'，獲得 '+(SELL_PRICE[k]*n)+' 金幣。',1400);}
+const SELL_PRICE={wood:2,stone:2,branch:1,clay:2,iron:4,crys:6,mush:2,moon:5,dew:4,flax:2,cloth:3,bug:2,honey:4,copper:5,gold:8,moss:3,fern:2};
+function advExch(k){if((inv[k]||0)<ADV_EXCH_N){toast('材料不足（需要 '+ADV_EXCH_N+' 個同種材料）。',1400);return;}
+  inv[k]-=ADV_EXCH_N;token++;hotbarUI();saveGame();renderPanel();toast('收購成功：信物 +1',1400);}
 function exchangeHTML(){
   const tabs='<div class="btabs" role="tablist"><button class="btab'+(exTab==='sell'?' on':'')+'" type="button" role="tab" aria-selected="'+(exTab==='sell')+'" data-etab="sell">賣出戰利品</button><button class="btab'+(exTab==='ex'?' on':'')+'" type="button" role="tab" aria-selected="'+(exTab==='ex')+'" data-etab="ex">交換素材</button></div>';
   let body;
@@ -719,81 +800,53 @@ function exchangeHTML(){
   else{const mats=TRIAL_MATS.filter(k=>inv[k]>=ADV_EXCH_N);
     body='<div class="note">同種材料 '+ADV_EXCH_N+' 個換 1 信物　目前信物 '+token+'（'+ADV_TOKEN_PULL+' 個信物可到旅人小屋抽一次）</div><div class="row">'+(mats.length?mats.map(k=>'<button class="pbtn" type="button" data-x="exch" data-k="'+k+'">'+NAME[k]+' ×'+ADV_EXCH_N+'</button>').join(''):'<div class="note">沒有足夠的材料（每種需要 '+ADV_EXCH_N+' 個）。</div>')+'</div>';}
   return '<div class="shead"><h2>交換所</h2><button class="pbtn" type="button" data-x="close" aria-label="關閉">關閉</button></div>'+tabs+'<div class="bookbody">'+body+'</div>';}
-const advOf=id=>ADV.find(x=>x.id===id);
-const gearOf=id=>GEAR.find(g=>g.id===id);
-// 每天固定的 6 個派遣任務（同一天所有人相同）
-function dayTasks(){let s=(Math.imul(day,2654435761)^0x9E3779B9)>>>0;const rnd=()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296;};
-  const names=DTASK_NAMES.slice(),out=[];
-  for(let i=0;i<6;i++){const nm=names.splice(Math.floor(rnd()*names.length),1)[0];const diff=1+Math.floor(rnd()*3);const hours=ADV_TIME[Math.floor(rnd()*3)];
-    out.push({i,name:nm,diff,hours,need:ADV_NEED[diff-1],n:diff+(hours>=3?1:0)+(hours>=6?1:0)});}
-  return out;}
-function advPower(id){const a=adv[id],m=advOf(id);if(!a||!m)return 0;let p=ADV_RPW[m.r]+a.stars*8;
-  Object.values(a.eq||{}).forEach(g=>{const gg=g&&gearOf(g);if(gg)p+=gg.pw;});return p;}
-function partyPower(ids){return ids.reduce((s,id)=>s+advPower(id),0);}
-function advChance(power,need){return Math.max(0.05,Math.min(0.95,power/need*0.8));}
-function portrait(m,sz){return '<span class="pt" style="background:'+m.c+';width:'+sz+'px;height:'+sz+'px;font-size:'+Math.round(sz*0.42)+'px">'+m.name[0]+'</span>';}
-function advDraw(){pity++;const r=Math.random();
-  const rar=(pity>=ADV_PITY||r<0.03)?'SSR':r<0.20?'SR':'R';if(rar==='SSR')pity=0;
-  const pool=ADV.filter(a=>a.r===rar);const a=pool[Math.floor(Math.random()*pool.length)];
-  let msg;if(adv[a.id]){adv[a.id].stars=Math.min(ADV_STAR_MAX,adv[a.id].stars+1);msg=(adv[a.id].stars>=ADV_STAR_MAX?'重複抽到「'+a.name+'」，已達 5 星！':'重複抽到「'+a.name+'」，升為 ★'+adv[a.id].stars+'。');}
-  else{adv[a.id]={stars:1,eq:{}};msg='新的冒險者加入：'+a.name+'（'+rar+'）！';}
-  return msg;}
-function advPull(){if(coins<ADV_PULL_COST){toast('金幣不足（單抽需要 '+ADV_PULL_COST+' 金幣）。',1600);return;}
-  coins-=ADV_PULL_COST;const msg=advDraw();
-  hotbarUI();saveGame();renderPanel();toast(msg,2400);}
-function advPullToken(){if(token<ADV_TOKEN_PULL){toast('信物不足（需要 '+ADV_TOKEN_PULL+' 個信物）。',1600);return;}
-  token-=ADV_TOKEN_PULL;const msg=advDraw();
-  hotbarUI();saveGame();renderPanel();toast('用信物抽卡：'+msg,2400);}
-function advToggle(id){const i=advSel.indexOf(id);if(i>=0){advSel.splice(i,1);}else{if(advSel.length>=ADV_PARTY_MAX){toast('一次最多派遣 '+ADV_PARTY_MAX+' 人。',1400);return;}advSel.push(id);}renderPanel();}
-function advBusy(){return new Set(disp.flatMap(d=>d.ids));}
-function advStart(){if(advTask==null){toast('請先選擇派遣任務。',1400);return;}const t=dayTasks()[advTask];if(!t)return;
-  const busy=advBusy();const ids=advSel.filter(id=>adv[id]&&!busy.has(id)).slice(0,ADV_PARTY_MAX);
-  if(!ids.length){toast('請先選擇冒險者（最多 '+ADV_PARTY_MAX+' 人）。',1400);return;}
-  const power=partyPower(ids),chance=advChance(power,t.need),ok=Math.random()<chance;
-  disp.push({ids,task:{name:t.name,diff:t.diff,hours:t.hours,need:t.need,n:t.n},power,chance,ok,end:gameMin+t.hours*60});
-  advSel=[];advTask=null;saveGame();renderPanel();toast('派遣出發了，'+t.hours+' 小時後回來。',1800);}
-function advClaim(i){const d=disp[i];if(!d||gameMin<d.end)return;
-  const snap=Object.assign({},inv);const lines=[];const n=d.ok?d.task.n:Math.max(1,Math.floor(d.task.n/2));
-  d.ids.forEach(id=>{const a=advOf(id);lines.push(a.name+'：'+a.line);});
-  for(let j=0;j<n;j++){const k=TRIAL_MATS[Math.floor(Math.random()*TRIAL_MATS.length)];inv[k]=(inv[k]||0)+1;}
-  if(slotsUsed()>BAG_MAX){inv=snap;toast(FULL,2000);return;}
-  disp.splice(i,1);hotbarUI();saveGame();renderPanel();toast((d.ok?'任務成功':'任務失敗（只拿到一半）')+'：'+d.task.name+'，戰利品 '+n+' 個已放進背包。\n'+lines.join('\n'),3600);}
-function advExch(k){if((inv[k]||0)<ADV_EXCH_N){toast('材料不足（需要 '+ADV_EXCH_N+' 個同種材料）。',1400);return;}
-  inv[k]-=ADV_EXCH_N;token++;hotbarUI();saveGame();renderPanel();toast('收購成功：信物 +1',1400);}
-function gearEquip(aid,slot,gid){const a=adv[aid];if(!a)return;a.eq=a.eq||{};
-  const old=a.eq[slot];if(old)gearInv[old]=(gearInv[old]||0)+1;
-  if(gid){gearInv[gid]--;if(gearInv[gid]<=0)delete gearInv[gid];a.eq[slot]=gid;}else a.eq[slot]=null;
-  advSlot=null;saveGame();renderPanel();}
-function advDetailHTML(id){const a=adv[id],m=advOf(id),eq=a.eq||{};
+function pullHTML(){
+  return '<div class="note">金幣 '+coins+'　信物 '+token+'　距離保底還差 '+(ADV_PITY-pity)+' 抽　冒險者 '+Object.keys(adv).length+' / '+ADV_ROSTER_MAX+'</div>'+
+  '<div class="row"><button class="pbtn go" type="button" data-x="pull"'+(coins<ADV_PULL_COST?' disabled':'')+'>單抽（'+ADV_PULL_COST+' 金幣）</button><button class="pbtn go" type="button" data-x="pulltoken"'+(token<ADV_TOKEN_PULL?' disabled':'')+'>信物抽（'+ADV_TOKEN_PULL+' 信物）</button></div>'+
+  '<div class="note">機率：R 80%、SR 17%、SSR 3%；金幣抽與信物抽共用保底，第 '+ADV_PITY+' 抽必出 SSR。重複抽到會升星（最高 5 星）。冒險者滿 '+ADV_ROSTER_MAX+' 位時，新抽到的會自動解約換信物。</div>';}
+function taskHTML(){
+  const tasks=dayTasks();const busy=advBusy();
+  const prog=disp.length?disp.map((d,i)=>dispProgressHTML(d,i)).join(''):'<div class="note">目前沒有派遣中的隊伍。</div>';
+  const tl=tasks.map(t=>'<button class="rec advrow'+(advTask===t.i?' on':'')+'" type="button" data-task="'+t.i+'"><span class="tx"><span class="nm">'+t.name+'　'+'★'.repeat(t.diff)+'　'+TERR[t.terrain].name+'</span><span class="need">'+t.hours+' 小時　需要戰力 '+t.need+'　獎勵 '+t.n+' 個</span></span></button>').join('');
+  const pres=presets.map((ids,i)=>'<button class="pbtn'+(advPreset===i?' go':'')+'" type="button" data-preset="'+i+'">隊伍 '+(i+1)+'（'+ids.filter(id=>adv[id]).length+' 人）</button>').join('');
+  const pIds=presets[advPreset].filter(id=>adv[id]&&!busy.has(id)).slice(0,ADV_PARTY_MAX);
+  let est='';if(advTask!=null){const t=tasks[advTask];if(pIds.length){const p=partyPower(pIds);est='<div class="note">隊伍戰力 '+p+' ／ 需要 '+t.need+'，預估成功率 '+Math.round(advChance(p,t.need)*100)+'%（失敗只拿一半獎勵）</div>';}else est='<div class="note">隊伍 '+(advPreset+1)+' 沒有可派遣的冒險者，請到「派遣隊伍」設定。</div>';}
+  return '<div class="sec">派遣進度</div>'+prog+'<div class="sec">派遣任務（每天更新）</div>'+tl+'<div class="sec">使用的隊伍</div><div class="row">'+pres+'</div>'+est+
+  '<div class="row"><button class="pbtn go" type="button" data-x="dispatch"'+(advTask!=null&&pIds.length?'':' disabled')+'>出發</button></div>';}
+function presetEditHTML(i){
+  const owned=ADV.filter(a=>adv[a.id]);const cur=presets[i];
+  return '<div class="shead"><h2>編輯隊伍 '+(i+1)+'</h2><button class="pbtn" type="button" data-pclose="1">完成</button></div>'+
+  '<div class="note">點選成員加入或移出（'+cur.filter(id=>adv[id]).length+' / '+ADV_PARTY_MAX+'）。派遣中的冒險者出發時會自動跳過。</div>'+
+  (owned.length?owned.map(a=>'<button class="rec advrow'+(cur.includes(a.id)?' on':'')+'" type="button" data-ptoggle="'+a.id+'">'+portrait(a,40)+'<span class="tx"><span class="nm">'+a.name+'　'+'★'.repeat(adv[a.id].stars)+'</span><span class="need">'+a.r+'　戰力 '+advPower(a.id)+(cur.includes(a.id)?'　已在隊伍':'')+'</span></span></button>').join(''):'<div class="note">還沒有冒險者。</div>');}
+function partyHTML(){
+  if(advEditPreset!=null&&presets[advEditPreset])return presetEditHTML(advEditPreset);
+  const busy=advBusy();
+  return presets.map((ids,i)=>{const mem=ids.filter(id=>adv[id]);
+    const rows=mem.length?mem.map(id=>{const m=advOf(id),eq=adv[id].eq||{};const gs=['weapon','armor','acc'].map(s=>eq[s]?gearOf(eq[s]).name:'—').join(' / ');
+      return '<div class="rec">'+portrait(m,40)+'<span class="tx"><span class="nm">'+m.name+'　戰力 '+advPower(id)+(busy.has(id)?'（派遣中）':'')+'</span><span class="need">武器 / 防具 / 飾品：'+gs+'</span></span></div>';}).join(''):'<div class="note">還沒有成員。</div>';
+    return '<div class="sec">隊伍 '+(i+1)+'（'+mem.length+' / '+ADV_PARTY_MAX+'，總戰力 '+partyPower(mem)+'）</div>'+rows+'<div class="row"><button class="pbtn" type="button" data-pedit="'+i+'">編輯成員</button></div>';}).join('');}
+function rosterHTML(){
+  const owned=ADV.filter(a=>adv[a.id]).sort((x,y)=>ADV_RANK[y.r]-ADV_RANK[x.r]||adv[y.id].stars-adv[x.id].stars);const busy=advBusy();
+  return '<div class="note">冒險者 '+owned.length+' 位（上限 '+ADV_ROSTER_MAX+'）。點一下看立繪、裝備與解約。</div>'+
+  (owned.length?owned.map(a=>'<button class="rec advrow" type="button" data-advview="'+a.id+'">'+portrait(a,44)+'<span class="tx"><span class="nm">'+a.name+'　'+'★'.repeat(adv[a.id].stars)+'</span><span class="need">'+a.r+'　戰力 '+advPower(a.id)+'　'+(busy.has(a.id)?'派遣中':'待命')+'</span></span></button>').join(''):'<div class="note">還沒有冒險者，先去招募吧。</div>');}
+function advDetailHTML(id){const a=adv[id],m=advOf(id),eq=a.eq||{};const busy=advBusy().has(id);
   const slots=['weapon','armor','acc'].map(s=>{const g=eq[s]?gearOf(eq[s]):null;
     return '<div class="rec"><span class="tx"><span class="nm">'+GEAR_SLOT[s]+'</span><span class="need">'+(g?g.name+'（戰力 +'+g.pw+'）':'空')+'</span></span>'+(g?'<button class="pbtn" type="button" data-eqoff="'+s+'">卸下</button>':'')+'<button class="pbtn go" type="button" data-eqpick="'+s+'">'+(g?'更換':'裝備')+'</button></div>';}).join('');
   let picker='';if(advSlot){const items=GEAR.filter(g=>g.slot===advSlot&&(gearInv[g.id]||0)>0);
-    picker='<div class="sec">選擇'+GEAR_SLOT[advSlot]+'</div>'+(items.length?items.map(g=>'<button class="rec advrow" type="button" data-eqset="'+g.id+'"><span class="tx"><span class="nm">'+g.name+'</span><span class="need">戰力 +'+g.pw+'　持有 '+gearInv[g.id]+'</span></span></button>').join(''):'<div class="note">沒有可用的'+GEAR_SLOT[advSlot]+'，請先到旅人小屋製作。</div>');}
+    picker='<div class="sec">選擇'+GEAR_SLOT[advSlot]+'</div>'+(items.length?items.map(g=>'<button class="rec advrow" type="button" data-eqset="'+g.id+'"><span class="tx"><span class="nm">'+g.name+'</span><span class="need">戰力 +'+g.pw+'　持有 '+gearInv[g.id]+'</span></span></button>').join(''):'<div class="note">沒有可用的'+GEAR_SLOT[advSlot]+'，請先到金工台的打鐵舖製作。</div>');}
   return '<div class="shead"><h2>'+m.name+'</h2><button class="pbtn" type="button" data-x="advback">返回</button></div>'+
     '<div class="advhero">'+portrait(m,120)+'<div><div class="nm">'+m.name+'　'+'★'.repeat(a.stars)+'</div><div class="need">'+m.r+'　戰力 '+advPower(id)+'</div><div class="note">'+m.line+'</div></div></div>'+
-    '<div class="sec">裝備</div>'+slots+picker+'<div class="note">裝備的戰力會加進派遣隊伍的總戰力。</div>';}
+    '<div class="sec">裝備</div>'+slots+picker+
+    '<div class="sec">解約</div><div class="row"><button class="pbtn" type="button" data-release="'+id+'"'+(busy?' disabled':'')+'>'+(advReleaseArmed===id?'再按一次確認解約':'解約（換 '+ADV_RELEASE[m.r]+' 個信物）')+'</button></div>'+
+    '<div class="note">'+(busy?'派遣中不能解約。':'解約後裝備會放回裝備庫，不會消失。')+'</div>';}
 function innHTML(){
   if(advDetail&&advOf(advDetail)&&adv[advDetail])return advDetailHTML(advDetail);
-  const busy=advBusy();const owned=ADV.filter(a=>adv[a.id]);const idle=owned.filter(a=>!busy.has(a.id));
-  advSel=advSel.filter(id=>idle.some(a=>a.id===id));
-  const tasks=dayTasks();
-  const roster=owned.length?owned.map(a=>'<button class="rec advrow" type="button" data-advview="'+a.id+'">'+portrait(a,44)+'<span class="tx"><span class="nm">'+a.name+'　'+'★'.repeat(adv[a.id].stars)+'</span><span class="need">'+a.r+'　戰力 '+advPower(a.id)+'　'+(busy.has(a.id)?'派遣中':'待命')+'</span></span></button>').join(''):'<div class="note">還沒有冒險者，先去招募吧。</div>';
-  const tlist=tasks.map(t=>'<button class="rec advrow'+(advTask===t.i?' on':'')+'" type="button" data-task="'+t.i+'"><span class="tx"><span class="nm">'+t.name+'　'+'★'.repeat(t.diff)+'</span><span class="need">'+t.hours+' 小時　需要戰力 '+t.need+'　獎勵 '+t.n+' 個</span></span></button>').join('');
-  const party=idle.length?idle.map(a=>'<button class="pbtn'+(advSel.includes(a.id)?' go':'')+'" type="button" data-adv="'+a.id+'">'+a.name+'　戰力 '+advPower(a.id)+(advSel.includes(a.id)?'（已選）':'')+'</button>').join(''):'<div class="note">目前沒有待命的冒險者。</div>';
-  let est='';if(advTask!=null&&advSel.length){const t=tasks[advTask];const p=partyPower(advSel);est='<div class="note">隊伍戰力 '+p+' ／ 需要 '+t.need+'，預估成功率 '+Math.round(advChance(p,t.need)*100)+'%（失敗只拿一半獎勵）</div>';}
-  const dl=disp.length?disp.map((d,i)=>{const ready=gameMin>=d.end;const left=Math.max(0,Math.ceil((d.end-gameMin)/60));return '<div class="rec"><span class="tx"><span class="nm">'+d.task.name+'　'+'★'.repeat(d.task.diff)+'　'+d.ids.map(id=>advOf(id).name).join('、')+'</span><span class="need">'+(ready?'已回來':'還剩約 '+left+' 小時')+'</span></span><button class="pbtn go" type="button" data-x="claimdisp" data-i="'+i+'"'+(ready?'':' disabled')+'>領取</button></div>';}).join(''):'<div class="note">目前沒有派遣中的隊伍。</div>';
-  return '<div class="shead"><h2>旅人小屋</h2><button class="pbtn" type="button" data-x="close" aria-label="關閉">關閉</button></div>'+
-  '<div class="note">金幣 '+coins+'　信物 '+token+'　距離保底還差 '+(ADV_PITY-pity)+' 抽</div>'+
-  '<div class="sec">招募</div><div class="row"><button class="pbtn go" type="button" data-x="pull"'+(coins<ADV_PULL_COST?' disabled':'')+'>單抽（'+ADV_PULL_COST+' 金幣）</button><button class="pbtn go" type="button" data-x="pulltoken"'+(token<ADV_TOKEN_PULL?' disabled':'')+'>信物抽（'+ADV_TOKEN_PULL+' 信物）</button></div>'+
-  '<div class="note">機率：R 80%、SR 17%、SSR 3%；金幣抽與信物抽共用保底，第 '+ADV_PITY+' 抽必出 SSR。重複抽到的冒險者會升星（最高 5 星）。</div>'+
-  '<div class="sec">冒險者（點一下看立繪與裝備）</div>'+roster+
-  '<div class="sec">派遣任務（每天更新）</div>'+tlist+
-  '<div class="sec">派遣隊伍（最多 '+ADV_PARTY_MAX+' 人）</div><div class="row">'+party+'</div>'+est+
-  '<div class="row"><button class="pbtn go" type="button" data-x="dispatch"'+(idle.length&&advSel.length&&advTask!=null?'':' disabled')+'>出發</button></div>'+
-  '<div class="sec">派遣中</div>'+dl+
-  '<div class="note">裝備製作在金工台旁的打鐵舖；賣出戰利品與交換素材請到交換所。</div>';}
+  const tabs=[['pull','招募'],['task','派遣任務'],['party','派遣隊伍'],['roster','冒險者']];
+  const tb='<div class="btabs" role="tablist">'+tabs.map(([k,l])=>'<button class="btab'+(innTab===k?' on':'')+'" type="button" role="tab" aria-selected="'+(innTab===k)+'" style="padding:0 12px" data-itab="'+k+'">'+l+'</button>').join('')+'</div>';
+  const body=innTab==='task'?taskHTML():innTab==='party'?partyHTML():innTab==='roster'?rosterHTML():pullHTML();
+  return '<div class="shead"><h2>旅人小屋</h2><button class="pbtn" type="button" data-x="close" aria-label="關閉">關閉</button></div>'+tb+'<div class="bookbody">'+body+'</div>';}
 function openPanel(k){chestMsg='';panelKind=k;panel.hidden=false;jx=jy=0;knob.style.transform='';renderPanel();sheet.scrollTop=0;}
-function closePanel(){panel.hidden=true;panelKind='';advDetail=null;advSlot=null;}
+function closePanel(){panel.hidden=true;panelKind='';advDetail=null;advSlot=null;advEditPreset=null;advReleaseArmed=null;}
 panel.addEventListener('click',e=>{if(e.target===panel)closePanel();});
 addEventListener('keydown',e=>{if(e.key==='Escape'&&!panel.hidden)closePanel();if((e.key==='b'||e.key==='B')&&panel.hidden)openPanel('bag');if((e.key==='r'||e.key==='R')&&panel.hidden)openPanel('book');});
 document.querySelectorAll('.sbtn').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.p;
@@ -854,9 +907,14 @@ sheet.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)retu
   else if(t.dataset.box!==undefined&&panelKind==='chest'){const c=chestCells.box[+t.dataset.box];moveCell(c,store,storeTools,inv,tools);if(slotsUsed()>BAG_MAX){moveCell(c,inv,tools,store,storeTools);toast(FULL,1800);}hotbarUI();renderChest();}
   else if(t.dataset.etab){exTab=t.dataset.etab;renderPanel();}
   else if(t.dataset.sell!==undefined){sellMat(t.dataset.sell,!!t.dataset.all);}
-  else if(t.dataset.adv!==undefined){advToggle(t.dataset.adv);}
+  else if(t.dataset.itab){innTab=t.dataset.itab;advDetail=null;renderPanel();sheet.scrollTop=0;}
+  else if(t.dataset.preset!==undefined){advPreset=+t.dataset.preset;renderPanel();}
+  else if(t.dataset.pedit!==undefined){advEditPreset=+t.dataset.pedit;renderPanel();}
+  else if(t.dataset.pclose){advEditPreset=null;renderPanel();}
+  else if(t.dataset.ptoggle!==undefined){const ps=presets[advEditPreset];const id=t.dataset.ptoggle;const ix=ps.indexOf(id);if(ix>=0)ps.splice(ix,1);else if(ps.length>=ADV_PARTY_MAX){toast('一組隊伍最多 '+ADV_PARTY_MAX+' 人。',1400);return;}else ps.push(id);saveGame();renderPanel();}
+  else if(t.dataset.release!==undefined){advRelease(t.dataset.release);}
   else if(t.dataset.advview!==undefined){advDetail=t.dataset.advview;advSlot=null;renderPanel();sheet.scrollTop=0;}
-  else if(t.dataset.x==='advback'){advDetail=null;advSlot=null;renderPanel();}
+  else if(t.dataset.x==='advback'){advDetail=null;advSlot=null;innTab='roster';renderPanel();}
   else if(t.dataset.task!==undefined){const i=+t.dataset.task;advTask=advTask===i?null:i;renderPanel();}
   else if(t.dataset.eqpick!==undefined){advSlot=t.dataset.eqpick;renderPanel();}
   else if(t.dataset.eqset!==undefined){gearEquip(advDetail,gearOf(t.dataset.eqset).slot,t.dataset.eqset);}
@@ -1084,7 +1142,7 @@ let wasHit=false,bumpT=0;let inside=false,layout=false,layMode='place',laySel=''
 const DOOR_IN={x:7.6,z:6.6};let last=performance.now(),walk=0,blockedAt=0,lastRegion='';
 function frame(now){
   const dt=Math.min(0.05,(now-last)/1000);last=now;const t=now/1000;
-  gameMin+=dt*1.6;{const di=Math.floor((gameMin-300)/1440)+1;if(di>day){day=di;newDay();}}{$('miniTime').textContent=fmtClock();}
+  gameMin+=dt*1.6;updateDispProgress();{const di=Math.floor((gameMin-300)/1440)+1;if(di>day){day=di;newDay();}}{$('miniTime').textContent=fmtClock();}
 
   // move
   let mx=jx,mz=jy;
@@ -1231,7 +1289,7 @@ const SAVE_KEY='mist-isle-save',SAVE_V=1;
 function saveGame(){if(skipSave)return;try{const pos=inside?[7.3,7.1]:inCave?[CAVE_E.x,CAVE_E.z+4.3]:[player.position.x,player.position.z];
   const d={v:SAVE_V,inv,tools,store,storeTools,BAG_MAX,day,gameMin,stamina,purified,timeRing,accOwned,accWorn,seen:[...seen],coins,dq,hot:hotCfg,
     furn:items.filter(it=>!it.fixed).map(it=>({id:it.id,ix:it.ix,iz:it.iz,rot:it.rot})),fixedPos:items.filter(it=>it.fixed).map(it=>({id:it.id,ix:it.ix,iz:it.iz,rot:it.rot})),pos,
-    adv,pity,disp,token,gearInv,world:{trees:trees.map(t=>({x:t.x,z:t.z,s:t.state==='falling'?'stump':t.state,h:t.hits,w:t.wood,b:t.branches,sh:t.stumpHits})),rocks:rocks.map(r=>({x:r.x,z:r.z,s:r.state,h:r.hits})),ores:caveOres.map(o=>({s:o.state,h:o.hits})),nodes:nodes.map(n=>({k:n.kind,x:n.x,z:n.z,t:!!n.taken})),mushes:mushes.map(m=>!!m.alive)}};
+    adv,pity,disp,token,gearInv,presets,world:{trees:trees.map(t=>({x:t.x,z:t.z,s:t.state==='falling'?'stump':t.state,h:t.hits,w:t.wood,b:t.branches,sh:t.stumpHits})),rocks:rocks.map(r=>({x:r.x,z:r.z,s:r.state,h:r.hits})),ores:caveOres.map(o=>({s:o.state,h:o.hits})),nodes:nodes.map(n=>({k:n.kind,x:n.x,z:n.z,t:!!n.taken})),mushes:mushes.map(m=>!!m.alive)}};
   localStorage.setItem(SAVE_KEY,JSON.stringify(d));}catch(e){}}
 // restore broken/felled/mined state of trees, stones and ores (same visuals as when they were broken)
 function applyWorld(w){if(!w)return;
@@ -1263,7 +1321,7 @@ function loadGame(){let d=null;try{d=JSON.parse(localStorage.getItem(SAVE_KEY)||
   if(d.purified){purified=true;forestMist.mat.opacity=0;forestMist.arr.forEach(m=>{m.visible=false;});}
   if(d.pos){player.position.x=d.pos[0];player.position.z=d.pos[1];}
   applyWorld(d.world);
-  adv=(d.adv&&typeof d.adv==='object')?d.adv:{};pity=d.pity||0;disp=(Array.isArray(d.disp)?d.disp:[]).map(x=>x.task?x:Object.assign({task:{name:'派遣',diff:1,hours:3,need:60,n:2}},x,{ok:x.ok!==false,ids:x.ids||[]}));token=d.token||0;advSel=[];advDetail=null;advTask=null;advSlot=null;gearInv=(d.gearInv&&typeof d.gearInv==='object')?d.gearInv:{};
+  adv=(d.adv&&typeof d.adv==='object')?d.adv:{};pity=d.pity||0;disp=(Array.isArray(d.disp)?d.disp:[]).map(x=>Object.assign({},x,{task:x.task||{name:'派遣',terrain:'forest',diff:1,hours:3,need:60,n:2},ok:x.ok!==false,ids:x.ids||[]}));token=d.token||0;advDetail=null;advTask=null;advSlot=null;advEditPreset=null;advReleaseArmed=null;dispReadyShown=0;gearInv=(d.gearInv&&typeof d.gearInv==='object')?d.gearInv:{};presets=(Array.isArray(d.presets)&&d.presets.length===ADV_PRESETS)?d.presets:[[],[],[]];
   if(Array.isArray(d.hot)&&d.hot.length===5)hotCfg=d.hot.map(k=>k||null);
   tierShownLv=tierNow();hotbarUI();staUI();return true;}
 const loaded=loadGame();
