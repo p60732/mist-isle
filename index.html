@@ -706,9 +706,15 @@ function accListHTML(){const keys=['ring','earring','necklace','lamp','hairband'
     (keys.length?keys.map(k=>'<div class="rec st-'+(k==='ring'?'loom':'metal')+'"><span class="ic">'+svg(k,36)+'</span><span class="tx"><span class="nm">'+NAME[k]+(accWorn.includes(k)?'（已裝備）':'')+'</span><span class="need">'+ACC_EFF[k]+'</span></span><button class="pbtn go" type="button" data-x="equip" data-k="'+k+'">'+(accWorn.includes(k)?'卸下':'裝備')+'</button></div>').join(''):'<div class="note">還沒有飾品。到工坊的金工台製作。</div>');}
 let tools={axe:[],pick:[]};const T=k=>tools[k][0]||null;
 let BAG_MAX=20;const STORE_MAX=80;let store={};let storeTools={axe:[],pick:[]};const isF=k=>k.indexOf('f_')===0;
-function slotsUsed(extra){const v=Object.assign({},inv);let tl=tools.axe.length+tools.pick.length;if(extra){if(extra.tool)tl++;else v[extra.k]=(v[extra.k]||0)+extra.n;}
-  let n=tl;Object.keys(v).forEach(k=>{if(v[k]>0)n+=Math.ceil(v[k]/(isF(k)?9:99));});return n;}
-const fits=e=>slotsUsed(e)<=BAG_MAX;
+// 背包每個分頁各自 BAG_MAX 格（裝備欄不占格）；擴充時四個分頁一起加
+const CONS_IDS=['mush','potion','stam','chest'];
+function catOfItem(k){return (k==='axe'||k==='pick'||isF(k))?'item':CONS_IDS.includes(k)?'cons':'mat';}
+function catUsed(cat,extra){const v=Object.assign({},inv);let n=0;
+  if(cat==='item')n=tools.axe.length+tools.pick.length;
+  if(extra){if(extra.tool){if(cat==='item')n++;}else if(catOfItem(extra.k)===cat)v[extra.k]=(v[extra.k]||0)+extra.n;}
+  Object.keys(v).forEach(k=>{if(v[k]>0&&catOfItem(k)===cat)n+=Math.ceil(v[k]/(isF(k)?9:99));});return n;}
+const fits=e=>catUsed(e.tool?'item':catOfItem(e.k),e)<=BAG_MAX;
+const cellCat=c=>c.t?'item':catOfItem(c.k);
 const FULL='背包滿了！先把東西用掉，或把家具擺進家裡。';
 let stamina=100;
 const maxStam=()=>accWorn.includes('earring')?120:100;
@@ -730,7 +736,7 @@ const RECIPES=[
  {id:'necklace',adv:true,st:'metal',name:'月光項鍊',need:{moon:2,crys:1},make:()=>{accOwned.necklace=true;},noItem:true,done:()=>!!accOwned.necklace,note:'飾品：開寶箱時稀有材料機率 +3%',locked:()=>lockTier(2)},
  {id:'lamp',adv:true,st:'metal',name:'發光項鍊',need:{gold:2,crys:1},make:()=>{accOwned.lamp=true;},noItem:true,done:()=>!!accOwned.lamp,note:'飾品：礦洞裡可見範圍變大',locked:()=>lockTier(2)},
  {id:'hairband',adv:true,st:'loom',name:'麻草髮帶',need:{flax:3,cloth:1},make:()=>{accOwned.hairband=true;},noItem:true,done:()=>!!accOwned.hairband,note:'飾品：外觀，沒有效果',locked:()=>lockTier(3)},
- {id:'bagup',adv:true,icon:'bag',st:'loom',name:'背包擴充',need:{cloth:3},make:()=>{BAG_MAX=Math.min(40,BAG_MAX+10);},when:()=>BAG_MAX<40,note:'背包 +10 格（最多 40）',noItem:true},
+ {id:'bagup',adv:true,icon:'bag',st:'loom',name:'背包擴充',need:{cloth:3},make:()=>{BAG_MAX=Math.min(40,BAG_MAX+10);},when:()=>BAG_MAX<40,note:'每個分頁背包 +10 格（最多 40）',noItem:true},
   {id:'g_wood_sword',adv:true,at:'metal',st:'smith',icon:'axe',name:'木劍',need:{wood:3},make:()=>{gearInv.g_wood_sword=(gearInv.g_wood_sword||0)+1;},noItem:true,note:'武器 · 戰力 +8'},
   {id:'g_stone_blade',adv:true,at:'metal',st:'smith',icon:'pick',name:'石刃',need:{stone:2,branch:1},make:()=>{gearInv.g_stone_blade=(gearInv.g_stone_blade||0)+1;},noItem:true,note:'武器 · 戰力 +14'},
   {id:'g_cloth_vest',adv:true,at:'metal',st:'smith',icon:'cloth',name:'麻布背心',need:{cloth:2,flax:2},make:()=>{gearInv.g_cloth_vest=(gearInv.g_cloth_vest||0)+1;},noItem:true,note:'防具 · 戰力 +8'},
@@ -898,7 +904,7 @@ function advClaim(i){const d=disp[i];if(!d||gameMin<d.end)return;
   const snap=Object.assign({},inv);const lines=[];const n=d.ok?d.task.n:Math.max(1,Math.floor(d.task.n/2));
   d.ids.forEach(id=>{const a=advOf(id);lines.push(a.name+'：'+a.line);});
   for(let j=0;j<n;j++){const k=TRIAL_MATS[Math.floor(Math.random()*TRIAL_MATS.length)];inv[k]=(inv[k]||0)+1;}
-  if(slotsUsed()>BAG_MAX){inv=snap;toast(FULL,2000);return;}
+  if(catUsed('mat')>BAG_MAX){inv=snap;toast(FULL,2000);return;}
   disp.splice(i,1);hotbarUI();saveGame();renderPanel();toast((d.ok?'任務成功':'任務失敗（一半戰利品）')+'：'+d.task.name+'，戰利品 ×'+n,3600);}
 function advRelease(id){if(!adv[id])return;const m=advOf(id);
   if(advBusy().has(id)){toast('派遣中的冒險者不能解約。',1400);return;}
@@ -994,7 +1000,7 @@ function renderPanel(){
     const catOf=k=>(k==='axe'||k==='pick'||isF(k))?'item':CONS.includes(k)?'cons':'mat';
     const tabs=[['gear','裝備欄'],['item','物品'],['cons','消耗品'],['mat','材料']];
     const tb='<div class="btabs" role="tablist">'+tabs.map(([k,l])=>'<button class="btab'+(bagTab===k?' on':'')+'" type="button" role="tab" aria-selected="'+(bagTab===k)+'" style="padding:0 10px" data-bt="'+k+'">'+l+'</button>').join('')+'</div>';
-    const head='<div class="shead"><h2>背包</h2><span class="note">'+slotsUsed()+' / '+BAG_MAX+' 格</span><button class="pbtn" type="button" data-x="close" aria-label="關閉背包">關閉</button></div>'+tb;
+    const head='<div class="shead"><h2>背包</h2><span class="note">'+(bagTab==='gear'?'':catUsed(bagTab)+' / '+BAG_MAX+' 格（本分頁）')+'</span><button class="pbtn" type="button" data-x="close" aria-label="關閉背包">關閉</button></div>'+tb;
     const foot='<div class="shead" style="margin-top:4px"><span class="note">畫面設定</span><button class="pbtn" type="button" data-x="curve">地平線彎曲：'+(curveOn?'開':'關')+'</button></div>';
     if(bagTab==='gear'){
       sheet.innerHTML=head+'<div class="bookbody">'+accListHTML()+'</div>'+foot;
@@ -1048,7 +1054,7 @@ sheet.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)retu
   else if(t.dataset.x==='import'){const code=(($('saveTxt')||{}).value||saveDraft||'').trim();saveDraft=code;if(!code){saveMsg='請先貼上存檔碼。';renderPanel();return;}let raw=null;try{raw=decodeURIComponent(escape(atob(code)));const d=JSON.parse(raw);if(!d||d.v!==SAVE_V)throw 0;}catch(err){raw=null;}if(!raw){importArmed=false;saveMsg='存檔碼無效，請確認是完整複製的。';renderPanel();return;}if(!importArmed){importArmed=true;saveMsg='再按一次即覆蓋目前進度。';renderPanel();return;}try{localStorage.setItem(SAVE_KEY,raw);skipSave=true;location.reload();}catch(err){saveMsg='無法寫入，請確認瀏覽器允許網站儲存資料。';renderPanel();}}
   else if(t.dataset.sleep){sleepUntil(+t.dataset.sleep);}
   else if(t.dataset.bag!==undefined&&panelKind==='chest'){const c=chestCells.bag[+t.dataset.bag];const before=storeSlots();moveCell(c,inv,tools,store,storeTools);if(storeSlots()>STORE_MAX){moveCell(c.t?c:{k:c.k,c:c.c},store,storeTools,inv,tools);toast('收納箱滿了。',1500);}hotbarUI();renderChest();}
-  else if(t.dataset.box!==undefined&&panelKind==='chest'){const c=chestCells.box[+t.dataset.box];moveCell(c,store,storeTools,inv,tools);if(slotsUsed()>BAG_MAX){moveCell(c,inv,tools,store,storeTools);toast(FULL,1800);}hotbarUI();renderChest();}
+  else if(t.dataset.box!==undefined&&panelKind==='chest'){const c=chestCells.box[+t.dataset.box];moveCell(c,store,storeTools,inv,tools);if(catUsed(cellCat(c))>BAG_MAX){moveCell(c,inv,tools,store,storeTools);toast(FULL,1800);}hotbarUI();renderChest();}
   else if(t.dataset.etab){exTab=t.dataset.etab;renderPanel();}
   else if(t.dataset.sell!==undefined){sellMat(t.dataset.sell,!!t.dataset.all);}
   else if(t.dataset.itab){innTab=t.dataset.itab;advDetail=null;renderPanel();sheet.scrollTop=0;}
@@ -1256,7 +1262,7 @@ function renderChest(){const bc=cellsFrom(inv,tools),sc=cellsFrom(store,storeToo
   sheet.innerHTML='<div class="shead"><h2>收納箱</h2><button class="pbtn" type="button" data-x="close">關閉</button></div>'+
   '<div class="note">點背包的東西放進收納箱，點收納箱的東西拿回背包（整格移動）。</div>'+
   '<div class="two"><b>收納箱　<span class="note">'+storeSlots()+' / '+STORE_MAX+' 格</span></b><div class="grid">'+(sc.length?sc.map((c,i)=>cellHTML(c,'box',i)).join(''):'<span class="note">還是空的。</span>')+'</div></div>'+
-  '<div class="two"><b>背包　<span class="note">'+slotsUsed()+' / '+BAG_MAX+' 格</span></b><div class="grid">'+bc.map((c,i)=>cellHTML(c,'bag',i)).join('')+'</div></div>';}
+  '<div class="two"><b>背包　<span class="note">每個分頁 '+BAG_MAX+' 格</span></b><div class="grid">'+bc.map((c,i)=>cellHTML(c,'bag',i)).join('')+'</div></div>';}
 function moveCell(c,fromInv,fromTools,toInv,toTools){if(c.t){fromTools[c.k].splice(fromTools[c.k].indexOf(c.t),1);toTools[c.k].push(c.t);}else{fromInv[c.k]-=c.c;toInv[c.k]=(toInv[c.k]||0)+c.c;}}
 function renderSleep(){const h=hourNow();
   const opts=[[6,'清晨 06:00','晨露只在 05–08 點出現'],[12,'中午 12:00','白天：一般採集'],[18,'傍晚 18:00','天快黑了'],[21,'晚上 21:00','月光蘑菇只在夜裡發光']];
