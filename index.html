@@ -133,7 +133,7 @@ body.inside #mini,body.inside #miniN{display:none}
   <button class="sbtn" type="button" data-p="bag"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6z"></path><path d="M9 8V6a3 3 0 0 1 6 0v2"></path></svg>背包</button>
   <button class="sbtn" type="button" data-p="craft"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"></path><path d="M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"></path></svg>配方書</button>
   <button class="sbtn" type="button" data-p="dress"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4L3 7l2 4 3-1v10h8V10l3 1 2-4-5-3a4 4 0 0 1-8 0z"></path></svg>換裝</button>
-  <button class="sbtn" type="button" data-p="inn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-6 8 6"></path><path d="M6 10v9h12v-9"></path><path d="M10 19v-5h4v5"></path></svg>旅人小屋<span class="badge">限定</span></button>
+  <button class="sbtn" type="button" data-p="inn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-6 8 6"></path><path d="M6 10v9h12v-9"></path><path d="M10 19v-5h4v5"></path></svg>旅人小屋</button>
   <button class="sbtn" type="button" data-p="save"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"></path><path d="M8 4v5h7V4"></path><path d="M8 20v-6h8v6"></path></svg>存檔</button>
   <button class="sbtn" type="button" data-p="quest"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4h11v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2h12"></path><path d="M7 4a2 2 0 0 0-2 2v10"></path></svg>任務<span class="dot" id="questDot" hidden></span></button>
 </div>
@@ -668,13 +668,62 @@ $('hotbar').addEventListener('pointerdown',e=>{e.preventDefault();hotPress(e);})
 $('hotbar').addEventListener('click',e=>{if(e.detail===0)hotPress(e);});
 // panels
 const panel=$('panel'),sheet=$('sheet');let craftSt='bench';let panelKind='',bagSel='wood';let bookTab='recipe';let chestMsg='';
+// ===== 旅人小屋：招募、派遣、收購（M3）=====
+const ADV=[ // 占位角色（名字與設定之後再換）
+ {id:'a1',name:'小風',r:'R',c:'#9FD6EC',line:'路上撿到好多漂亮的石頭！'},
+ {id:'a2',name:'木鈴',r:'R',c:'#B7D98A',line:'林子裡有點涼，不過很舒服。'},
+ {id:'a3',name:'岩生',r:'R',c:'#C9B48E',line:'礦脈比我想像中硬呢。'},
+ {id:'a4',name:'葉子',r:'R',c:'#8FBF7A',line:'這次採到不少蕨類，明天也去看看。'},
+ {id:'a5',name:'露珠',r:'SR',c:'#7FC8E8',line:'晨露很快就會蒸發，我有趕在前面採到。'},
+ {id:'a6',name:'星砂',r:'SR',c:'#F7C948',line:'金砂閃閃的，像撒了一地星星。'},
+ {id:'a7',name:'燈火',r:'SR',c:'#FFD27A',line:'帶著燈，洞裡再暗也不怕。'},
+ {id:'a8',name:'霧影',r:'SSR',c:'#A9B2BE',line:'我來自霧的另一邊，那裡的風很安靜。'}];
+const ADV_PULL_COST=100,ADV_PITY=50,ADV_DISPATCH_MIN=180,ADV_PARTY_MAX=5,ADV_STAR_MAX=5,ADV_EXCH_N=3;
+let adv={},pity=0,disp=[],token=0,advSel=[];
+const advOf=id=>ADV.find(x=>x.id===id);
+function advPull(){if(coins<ADV_PULL_COST){toast('金幣不足（單抽需要 '+ADV_PULL_COST+' 金幣）。',1600);return;}
+  coins-=ADV_PULL_COST;pity++;const r=Math.random();
+  const rar=(pity>=ADV_PITY||r<0.03)?'SSR':r<0.20?'SR':'R';if(rar==='SSR')pity=0;
+  const pool=ADV.filter(a=>a.r===rar);const a=pool[Math.floor(Math.random()*pool.length)];
+  let msg;if(adv[a.id]){adv[a.id].stars=Math.min(ADV_STAR_MAX,adv[a.id].stars+1);msg=(adv[a.id].stars>=ADV_STAR_MAX?'重複抽到「'+a.name+'」，已達 5 星！':'重複抽到「'+a.name+'」，升為 ★'+adv[a.id].stars+'。');}
+  else{adv[a.id]={stars:1};msg='新的冒險者加入：'+a.name+'（'+rar+'）！';}
+  hotbarUI();saveGame();renderPanel();toast(msg,2400);}
+function advToggle(id){const i=advSel.indexOf(id);if(i>=0){advSel.splice(i,1);}else{if(advSel.length>=ADV_PARTY_MAX){toast('一次最多派遣 '+ADV_PARTY_MAX+' 人。',1400);return;}advSel.push(id);}renderPanel();}
+function advBusy(){return new Set(disp.flatMap(d=>d.ids));}
+function advStart(){const busy=advBusy();const ids=advSel.filter(id=>adv[id]&&!busy.has(id));
+  if(!ids.length){toast('請先選擇冒險者（最多 '+ADV_PARTY_MAX+' 人）。',1400);return;}
+  disp.push({ids:ids.slice(0,ADV_PARTY_MAX),end:gameMin+ADV_DISPATCH_MIN});advSel=[];saveGame();renderPanel();toast('派遣出發了，3 小時後回來。',1800);}
+function advClaim(i){const d=disp[i];if(!d||gameMin<d.end)return;
+  const snap=Object.assign({},inv);const lines=[];
+  d.ids.forEach(id=>{const a=advOf(id);lines.push(a.name+'：'+a.line);const n=1+Math.floor(Math.random()*3);
+    for(let j=0;j<n;j++){const k=TRIAL_MATS[Math.floor(Math.random()*TRIAL_MATS.length)];inv[k]=(inv[k]||0)+1;}});
+  if(slotsUsed()>BAG_MAX){inv=snap;toast(FULL,2000);return;}
+  disp.splice(i,1);hotbarUI();saveGame();renderPanel();toast('派遣回來了！戰利品已放進背包。\n'+lines.join('\n'),3600);}
+function advExch(k){if((inv[k]||0)<ADV_EXCH_N){toast('材料不足（需要 '+ADV_EXCH_N+' 個同種材料）。',1400);return;}
+  inv[k]-=ADV_EXCH_N;token++;hotbarUI();saveGame();renderPanel();toast('收購成功：信物 +1',1400);}
+function innHTML(){const busy=advBusy();const owned=ADV.filter(a=>adv[a.id]);const idle=owned.filter(a=>!busy.has(a.id));
+  advSel=advSel.filter(id=>idle.some(a=>a.id===id));
+  const roster=owned.length?owned.map(a=>'<div class="rec"><span class="ic" style="background:'+a.c+'">'+a.name[0]+'</span><span class="tx"><span class="nm">'+a.name+'　'+'★'.repeat(adv[a.id].stars)+'</span><span class="need">'+a.r+'　'+(busy.has(a.id)?'派遣中':'待命')+'</span></span></div>').join(''):'<div class="note">還沒有冒險者，先去招募吧。</div>';
+  const party=idle.length?idle.map(a=>'<button class="pbtn'+(advSel.includes(a.id)?' go':'')+'" type="button" data-adv="'+a.id+'">'+a.name+(advSel.includes(a.id)?'（已選）':'')+'</button>').join(''):'<div class="note">目前沒有待命的冒險者。</div>';
+  const dl=disp.length?disp.map((d,i)=>{const ready=gameMin>=d.end;const left=Math.max(0,Math.ceil((d.end-gameMin)/60));return '<div class="rec"><span class="tx"><span class="nm">'+d.ids.map(id=>advOf(id).name).join('、')+'</span><span class="need">'+(ready?'已回來':'還剩約 '+left+' 小時')+'</span></span><button class="pbtn go" type="button" data-x="claimdisp" data-i="'+i+'"'+(ready?'':' disabled')+'>領取</button></div>';}).join(''):'<div class="note">目前沒有派遣中的隊伍。</div>';
+  const mats=TRIAL_MATS.filter(k=>inv[k]>=ADV_EXCH_N);
+  const ex=mats.length?mats.map(k=>'<button class="pbtn" type="button" data-x="exch" data-k="'+k+'">'+NAME[k]+' ×'+ADV_EXCH_N+'</button>').join(''):'<div class="note">沒有足夠的材料（每種需要 '+ADV_EXCH_N+' 個）。</div>';
+  return '<div class="shead"><h2>旅人小屋</h2><button class="pbtn" type="button" data-x="close" aria-label="關閉">關閉</button></div>'+
+  '<div class="note">金幣 '+coins+'　信物 '+token+'　距離保底還差 '+(ADV_PITY-pity)+' 抽</div>'+
+  '<div class="sec">招募</div><div class="row"><button class="pbtn go" type="button" data-x="pull"'+(coins<ADV_PULL_COST?' disabled':'')+'>單抽（'+ADV_PULL_COST+' 金幣）</button></div>'+
+  '<div class="note">機率：R 80%、SR 17%、SSR 3%；第 '+ADV_PITY+' 抽保底 SSR。重複抽到的冒險者會升星（最高 5 星）。</div>'+
+  '<div class="sec">冒險者</div>'+roster+
+  '<div class="sec">派遣（最多 '+ADV_PARTY_MAX+' 人，3 小時）</div><div class="row">'+party+'</div>'+
+  '<div class="row"><button class="pbtn go" type="button" data-x="dispatch"'+(idle.length&&advSel.length?'':' disabled')+'>出發（'+advSel.length+' 人）</button></div>'+
+  '<div class="note">戰利品為 1 到 3 個隨機材料／每人，回來後領取。</div>'+dl+
+  '<div class="sec">收購材料（'+ADV_EXCH_N+' 個同種換 1 信物）</div><div class="row">'+ex+'</div>';}
 function openPanel(k){chestMsg='';panelKind=k;panel.hidden=false;jx=jy=0;knob.style.transform='';renderPanel();sheet.scrollTop=0;}
 function closePanel(){panel.hidden=true;panelKind='';}
 panel.addEventListener('click',e=>{if(e.target===panel)closePanel();});
 addEventListener('keydown',e=>{if(e.key==='Escape'&&!panel.hidden)closePanel();if((e.key==='b'||e.key==='B')&&panel.hidden)openPanel('bag');if((e.key==='r'||e.key==='R')&&panel.hidden)openPanel('book');});
 document.querySelectorAll('.sbtn').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.p;
-  if(k==='bag')openPanel('bag');else if(k==='craft')openPanel('book');else if(k==='save')openPanel('save');else if(k==='dress')openPanel('dress');else if(k==='quest')openPanel('quest');
-  else toast({inn:'旅人小屋（招募、派遣）已在 UI 原型裡，M3 接進遊戲。',quest:'任務畫面已在 UI 原型裡，M4 接進遊戲。'}[k],2200);}));
+  if(k==='bag')openPanel('bag');else if(k==='craft')openPanel('book');else if(k==='save')openPanel('save');else if(k==='dress')openPanel('dress');else if(k==='quest')openPanel('quest');else if(k==='inn')openPanel('inn');
+  else toast('任務畫面已在 UI 原型裡，M4 接進遊戲。',2200);}));
 function renderPanel(){
   if(panelKind==='chest'){renderChest();return;}
   if(panelKind==='sleep'){renderSleep();return;}
@@ -701,6 +750,8 @@ function renderPanel(){
       '<div class="note">'+(timeRing&&accWorn.includes('ring')?'時空戒指已裝備，可以在島上製作基本道具。':'在島上製作基本道具，需要先裝備時空戒指（到換裝）。')+'家具與進階配方請走到工坊裡對應的工具台、金工台、釜或織布機。</div>';
   }else if(panelKind==='dress'){
     sheet.innerHTML='<div class="shead"><h2>換裝</h2><button class="pbtn" type="button" data-x="close" aria-label="關閉">關閉</button></div>'+accListHTML();
+  }else if(panelKind==='inn'){
+    sheet.innerHTML=innHTML();
   }else if(panelKind==='quest'){
     sheet.innerHTML=questHTML();
   }else if(panelKind==='craft'){
@@ -724,6 +775,11 @@ sheet.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)retu
   else if(t.dataset.sleep){sleepUntil(+t.dataset.sleep);}
   else if(t.dataset.bag!==undefined&&panelKind==='chest'){const c=chestCells.bag[+t.dataset.bag];const before=storeSlots();moveCell(c,inv,tools,store,storeTools);if(storeSlots()>STORE_MAX){moveCell(c.t?c:{k:c.k,c:c.c},store,storeTools,inv,tools);toast('收納箱滿了。',1500);}hotbarUI();renderChest();}
   else if(t.dataset.box!==undefined&&panelKind==='chest'){const c=chestCells.box[+t.dataset.box];moveCell(c,store,storeTools,inv,tools);if(slotsUsed()>BAG_MAX){moveCell(c,inv,tools,store,storeTools);toast(FULL,1800);}hotbarUI();renderChest();}
+  else if(t.dataset.adv!==undefined){advToggle(t.dataset.adv);}
+  else if(t.dataset.x==='pull'){advPull();}
+  else if(t.dataset.x==='dispatch'){advStart();}
+  else if(t.dataset.x==='claimdisp'){advClaim(+t.dataset.i);}
+  else if(t.dataset.x==='exch'){advExch(t.dataset.k);}
   else if(t.dataset.x==='curve'){curveOn=!curveOn;curveU.value=curveOn?CURVE:0;renderPanel();}
   else if(t.dataset.x==='eat'){if(stamina>=maxStam()){toast('體力已經是滿的。',1200);return;}inv.mush--;stamina=Math.min(maxStam(),stamina+15);staUI();hotbarUI();renderPanel();}
   else if(t.dataset.sel){bagSel=t.dataset.sel;chestMsg='';renderPanel();}
@@ -1089,7 +1145,7 @@ const SAVE_KEY='mist-isle-save',SAVE_V=1;
 function saveGame(){if(skipSave)return;try{const pos=inside?[7.3,7.1]:inCave?[CAVE_E.x,CAVE_E.z+4.3]:[player.position.x,player.position.z];
   const d={v:SAVE_V,inv,tools,store,storeTools,BAG_MAX,day,gameMin,stamina,purified,timeRing,accOwned,accWorn,seen:[...seen],coins,dq,hot:hotCfg,
     furn:items.filter(it=>!it.fixed).map(it=>({id:it.id,ix:it.ix,iz:it.iz,rot:it.rot})),fixedPos:items.filter(it=>it.fixed).map(it=>({id:it.id,ix:it.ix,iz:it.iz,rot:it.rot})),pos,
-    world:{trees:trees.map(t=>({x:t.x,z:t.z,s:t.state==='falling'?'stump':t.state,h:t.hits,w:t.wood,b:t.branches,sh:t.stumpHits})),rocks:rocks.map(r=>({x:r.x,z:r.z,s:r.state,h:r.hits})),ores:caveOres.map(o=>({s:o.state,h:o.hits})),nodes:nodes.map(n=>({k:n.kind,x:n.x,z:n.z,t:!!n.taken})),mushes:mushes.map(m=>!!m.alive)}};
+    adv,pity,disp,token,world:{trees:trees.map(t=>({x:t.x,z:t.z,s:t.state==='falling'?'stump':t.state,h:t.hits,w:t.wood,b:t.branches,sh:t.stumpHits})),rocks:rocks.map(r=>({x:r.x,z:r.z,s:r.state,h:r.hits})),ores:caveOres.map(o=>({s:o.state,h:o.hits})),nodes:nodes.map(n=>({k:n.kind,x:n.x,z:n.z,t:!!n.taken})),mushes:mushes.map(m=>!!m.alive)}};
   localStorage.setItem(SAVE_KEY,JSON.stringify(d));}catch(e){}}
 // restore broken/felled/mined state of trees, stones and ores (same visuals as when they were broken)
 function applyWorld(w){if(!w)return;
@@ -1121,6 +1177,7 @@ function loadGame(){let d=null;try{d=JSON.parse(localStorage.getItem(SAVE_KEY)||
   if(d.purified){purified=true;forestMist.mat.opacity=0;forestMist.arr.forEach(m=>{m.visible=false;});}
   if(d.pos){player.position.x=d.pos[0];player.position.z=d.pos[1];}
   applyWorld(d.world);
+  adv=(d.adv&&typeof d.adv==='object')?d.adv:{};pity=d.pity||0;disp=Array.isArray(d.disp)?d.disp:[];token=d.token||0;advSel=[];
   if(Array.isArray(d.hot)&&d.hot.length===5)hotCfg=d.hot.map(k=>k||null);
   tierShownLv=tierNow();hotbarUI();staUI();return true;}
 const loaded=loadGame();
