@@ -695,7 +695,7 @@ const ADV=[ // 占位角色（名字與設定之後再換）
  {id:'a6',name:'星砂',r:'SR',c:'#F7C948',line:'金砂閃閃的，像撒了一地星星。'},
  {id:'a7',name:'燈火',r:'SR',c:'#FFD27A',line:'帶著燈，洞裡再暗也不怕。'},
  {id:'a8',name:'霧影',r:'SSR',c:'#A9B2BE',line:'我來自霧的另一邊，那裡的風很安靜。'}];
-const ADV_PULL_COST=100,ADV_PITY=50,ADV_PARTY_MAX=5,ADV_STAR_MAX=5,ADV_EXCH_N=3;
+const ADV_PULL_COST=100,ADV_TOKEN_PULL=10,ADV_PITY=50,ADV_PARTY_MAX=5,ADV_STAR_MAX=5,ADV_EXCH_N=3;
 const ADV_RPW={R:10,SR:20,SSR:35};   // 稀有度基礎戰力
 const ADV_NEED=[60,120,200];         // 任務難度 1/2/3 的需要戰力
 const ADV_TIME=[1,3,6];              // 派遣時間（遊戲內小時）
@@ -717,7 +717,7 @@ function exchangeHTML(){
   if(exTab==='sell'){const rows=TRIAL_MATS.filter(k=>inv[k]>0).map(k=>'<div class="rec"><span class="ic">'+(ICON[k]?svg(k,36):'')+'</span><span class="tx"><span class="nm">'+NAME[k]+' ×'+inv[k]+'</span><span class="need">每個 '+SELL_PRICE[k]+' 金幣</span></span><button class="pbtn" type="button" data-sell="'+k+'">賣 1</button><button class="pbtn go" type="button" data-sell="'+k+'" data-all="1">全賣</button></div>').join('');
     body='<div class="note">金幣 '+coins+'</div>'+(rows||'<div class="note">背包裡沒有可以賣的材料。</div>');}
   else{const mats=TRIAL_MATS.filter(k=>inv[k]>=ADV_EXCH_N);
-    body='<div class="note">同種材料 '+ADV_EXCH_N+' 個換 1 信物　目前信物 '+token+'</div><div class="row">'+(mats.length?mats.map(k=>'<button class="pbtn" type="button" data-x="exch" data-k="'+k+'">'+NAME[k]+' ×'+ADV_EXCH_N+'</button>').join(''):'<div class="note">沒有足夠的材料（每種需要 '+ADV_EXCH_N+' 個）。</div>')+'</div>';}
+    body='<div class="note">同種材料 '+ADV_EXCH_N+' 個換 1 信物　目前信物 '+token+'（'+ADV_TOKEN_PULL+' 個信物可到旅人小屋抽一次）</div><div class="row">'+(mats.length?mats.map(k=>'<button class="pbtn" type="button" data-x="exch" data-k="'+k+'">'+NAME[k]+' ×'+ADV_EXCH_N+'</button>').join(''):'<div class="note">沒有足夠的材料（每種需要 '+ADV_EXCH_N+' 個）。</div>')+'</div>';}
   return '<div class="shead"><h2>交換所</h2><button class="pbtn" type="button" data-x="close" aria-label="關閉">關閉</button></div>'+tabs+'<div class="bookbody">'+body+'</div>';}
 const advOf=id=>ADV.find(x=>x.id===id);
 const gearOf=id=>GEAR.find(g=>g.id===id);
@@ -732,13 +732,18 @@ function advPower(id){const a=adv[id],m=advOf(id);if(!a||!m)return 0;let p=ADV_R
 function partyPower(ids){return ids.reduce((s,id)=>s+advPower(id),0);}
 function advChance(power,need){return Math.max(0.05,Math.min(0.95,power/need*0.8));}
 function portrait(m,sz){return '<span class="pt" style="background:'+m.c+';width:'+sz+'px;height:'+sz+'px;font-size:'+Math.round(sz*0.42)+'px">'+m.name[0]+'</span>';}
-function advPull(){if(coins<ADV_PULL_COST){toast('金幣不足（單抽需要 '+ADV_PULL_COST+' 金幣）。',1600);return;}
-  coins-=ADV_PULL_COST;pity++;const r=Math.random();
+function advDraw(){pity++;const r=Math.random();
   const rar=(pity>=ADV_PITY||r<0.03)?'SSR':r<0.20?'SR':'R';if(rar==='SSR')pity=0;
   const pool=ADV.filter(a=>a.r===rar);const a=pool[Math.floor(Math.random()*pool.length)];
   let msg;if(adv[a.id]){adv[a.id].stars=Math.min(ADV_STAR_MAX,adv[a.id].stars+1);msg=(adv[a.id].stars>=ADV_STAR_MAX?'重複抽到「'+a.name+'」，已達 5 星！':'重複抽到「'+a.name+'」，升為 ★'+adv[a.id].stars+'。');}
   else{adv[a.id]={stars:1,eq:{}};msg='新的冒險者加入：'+a.name+'（'+rar+'）！';}
+  return msg;}
+function advPull(){if(coins<ADV_PULL_COST){toast('金幣不足（單抽需要 '+ADV_PULL_COST+' 金幣）。',1600);return;}
+  coins-=ADV_PULL_COST;const msg=advDraw();
   hotbarUI();saveGame();renderPanel();toast(msg,2400);}
+function advPullToken(){if(token<ADV_TOKEN_PULL){toast('信物不足（需要 '+ADV_TOKEN_PULL+' 個信物）。',1600);return;}
+  token-=ADV_TOKEN_PULL;const msg=advDraw();
+  hotbarUI();saveGame();renderPanel();toast('用信物抽卡：'+msg,2400);}
 function advToggle(id){const i=advSel.indexOf(id);if(i>=0){advSel.splice(i,1);}else{if(advSel.length>=ADV_PARTY_MAX){toast('一次最多派遣 '+ADV_PARTY_MAX+' 人。',1400);return;}advSel.push(id);}renderPanel();}
 function advBusy(){return new Set(disp.flatMap(d=>d.ids));}
 function advStart(){if(advTask==null){toast('請先選擇派遣任務。',1400);return;}const t=dayTasks()[advTask];if(!t)return;
@@ -779,8 +784,8 @@ function innHTML(){
   const dl=disp.length?disp.map((d,i)=>{const ready=gameMin>=d.end;const left=Math.max(0,Math.ceil((d.end-gameMin)/60));return '<div class="rec"><span class="tx"><span class="nm">'+d.task.name+'　'+'★'.repeat(d.task.diff)+'　'+d.ids.map(id=>advOf(id).name).join('、')+'</span><span class="need">'+(ready?'已回來':'還剩約 '+left+' 小時')+'</span></span><button class="pbtn go" type="button" data-x="claimdisp" data-i="'+i+'"'+(ready?'':' disabled')+'>領取</button></div>';}).join(''):'<div class="note">目前沒有派遣中的隊伍。</div>';
   return '<div class="shead"><h2>旅人小屋</h2><button class="pbtn" type="button" data-x="close" aria-label="關閉">關閉</button></div>'+
   '<div class="note">金幣 '+coins+'　信物 '+token+'　距離保底還差 '+(ADV_PITY-pity)+' 抽</div>'+
-  '<div class="sec">招募</div><div class="row"><button class="pbtn go" type="button" data-x="pull"'+(coins<ADV_PULL_COST?' disabled':'')+'>單抽（'+ADV_PULL_COST+' 金幣）</button></div>'+
-  '<div class="note">機率：R 80%、SR 17%、SSR 3%；第 '+ADV_PITY+' 抽保底 SSR。重複抽到的冒險者會升星（最高 5 星）。</div>'+
+  '<div class="sec">招募</div><div class="row"><button class="pbtn go" type="button" data-x="pull"'+(coins<ADV_PULL_COST?' disabled':'')+'>單抽（'+ADV_PULL_COST+' 金幣）</button><button class="pbtn go" type="button" data-x="pulltoken"'+(token<ADV_TOKEN_PULL?' disabled':'')+'>信物抽（'+ADV_TOKEN_PULL+' 信物）</button></div>'+
+  '<div class="note">機率：R 80%、SR 17%、SSR 3%；金幣抽與信物抽共用保底，第 '+ADV_PITY+' 抽必出 SSR。重複抽到的冒險者會升星（最高 5 星）。</div>'+
   '<div class="sec">冒險者（點一下看立繪與裝備）</div>'+roster+
   '<div class="sec">派遣任務（每天更新）</div>'+tlist+
   '<div class="sec">派遣隊伍（最多 '+ADV_PARTY_MAX+' 人）</div><div class="row">'+party+'</div>'+est+
@@ -857,6 +862,7 @@ sheet.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)retu
   else if(t.dataset.eqset!==undefined){gearEquip(advDetail,gearOf(t.dataset.eqset).slot,t.dataset.eqset);}
   else if(t.dataset.eqoff!==undefined){gearEquip(advDetail,t.dataset.eqoff,null);}
   else if(t.dataset.x==='pull'){advPull();}
+  else if(t.dataset.x==='pulltoken'){advPullToken();}
   else if(t.dataset.x==='dispatch'){advStart();}
   else if(t.dataset.x==='claimdisp'){advClaim(+t.dataset.i);}
   else if(t.dataset.x==='exch'){advExch(t.dataset.k);}
