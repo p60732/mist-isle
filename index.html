@@ -40,7 +40,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--sky);color:var(-
 .advrow.on{outline:3px solid var(--ink);outline-offset:-3px}
 .advhero{display:flex;gap:14px;align-items:center;margin:8px 0}
 #toast{z-index:60;left:12px;right:12px;top:calc(62px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:6px;pointer-events:none;background:none;box-shadow:none;border:0;padding:0;border-radius:0}
-.tl{flex:none;box-sizing:border-box;height:auto;padding:7px 14px;border-radius:14px;background:rgba(59,42,30,.5);color:#FFF8EC;box-shadow:0 2px 8px rgba(0,0,0,.18);font-size:15px;line-height:1.5;overflow:hidden;white-space:nowrap;transition:opacity .35s,transform .35s}
+.tl{flex:none;box-sizing:border-box;height:auto;padding:7px 14px;border-radius:14px;background:rgba(59,42,30,.5);color:#FFF8EC;box-shadow:0 2px 8px rgba(0,0,0,.18);font-size:15px;line-height:1.5;overflow:hidden;white-space:nowrap;text-align:center;transition:opacity .35s,transform .35s}
 .tl.old1{opacity:.6}.tl.old2{opacity:.3}
 .tl.out{opacity:0;transform:translateY(-6px)}
 .tl .tx{display:inline-block;white-space:nowrap}
@@ -598,17 +598,22 @@ ring.rotation.x=-Math.PI/2;ring.position.y=0.2;scene.add(ring);
 const $=id=>document.getElementById(id);
 const toastEl=$('toast');const TOAST_MAX=3;
 // 提示：最新在最上，舊的往下漸淡，最多同時 3 條；每條各自單行跑馬燈
+// 顯示時間至少涵蓋一輪跑馬燈，確保長文字滾完才消失
+function toastFade(row){if(!row.isConnected||row.classList.contains('out'))return;row.classList.add('out');setTimeout(()=>row.remove(),400);}
 function toast(msg,ms){const txt=String(msg).replace(/\n+/g,'　');
   const row=document.createElement('div');row.className='tl';
   const tx=document.createElement('span');tx.className='tx';tx.textContent=txt;row.appendChild(tx);
   toastEl.insertBefore(row,toastEl.firstChild);
   const rows=[...toastEl.querySelectorAll('.tl:not(.out)')];
   rows.forEach((r,k)=>{r.classList.toggle('old1',k===1);r.classList.toggle('old2',k===2);});
-  for(let k=TOAST_MAX;k<rows.length;k++)rows[k].remove();
-  requestAnimationFrame(()=>{const w=row.clientWidth-28,tw=tx.scrollWidth;if(tw<=w)return;
-    tx.style.setProperty('--w',w+'px');tx.style.setProperty('--tw',tw+'px');
-    tx.style.setProperty('--dur',((w+tw)/60).toFixed(1)+'s');tx.classList.add('scroll');});
-  setTimeout(()=>{row.classList.add('out');setTimeout(()=>row.remove(),400);},ms||2800);}
+  for(let k=TOAST_MAX;k<rows.length;k++)toastFade(rows[k]);
+  let life=ms||2800;
+  requestAnimationFrame(()=>{const w=row.clientWidth-28,tw=tx.scrollWidth;
+    if(tw>w){const pass=(w+tw)/80;
+      tx.style.setProperty('--w',w+'px');tx.style.setProperty('--tw',tw+'px');
+      tx.style.setProperty('--dur',pass.toFixed(1)+'s');tx.classList.add('scroll');
+      life=Math.max(life,pass*1000+600);}
+    setTimeout(()=>toastFade(row),life);});}
 const ICON={
  moss:'<path d="M6 40 Q10 24 24 22 Q38 24 42 40 Z" fill="#6F9A4E"/><circle cx="16" cy="32" r="3" fill="#8DB86A"/><circle cx="27" cy="28" r="3.5" fill="#8DB86A"/><circle cx="33" cy="36" r="2.5" fill="#A8CF82"/>',
  fern:'<path d="M24 44 V8" stroke="#4E7A3C" stroke-width="2" fill="none"/><path d="M24 12 Q14 14 10 22 Q18 20 24 20 Z M24 12 Q34 14 38 22 Q30 20 24 20 Z M24 22 Q15 24 12 32 Q20 30 24 30 Z M24 22 Q33 24 36 32 Q28 30 24 30 Z M24 32 Q18 33 16 40 Q22 38 24 38 Z M24 32 Q30 33 32 40 Q26 38 24 38 Z" fill="#7FB069"/>',
