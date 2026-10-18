@@ -39,7 +39,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--sky);color:var(-
 .advrow{width:100%;border:0;text-align:left;font:inherit;color:inherit;cursor:pointer;background:var(--paper);box-shadow:0 2px 0 var(--paper-edge)}
 .advrow.on{outline:3px solid var(--ink);outline-offset:-3px}
 .advhero{display:flex;gap:14px;align-items:center;margin:8px 0}
-#toast{z-index:6;left:12px;right:96px;top:calc(112px + env(safe-area-inset-top,0px));bottom:auto;transform:translate(0,8px);width:auto;max-width:none;box-sizing:border-box;padding:10px 16px;white-space:normal;overflow-wrap:break-word;height:auto;display:block;border-radius:14px;background:rgba(59,42,30,.78);color:#FFF8EC;box-shadow:0 2px 8px rgba(0,0,0,.18);font-size:15px;line-height:1.55;text-align:center;pointer-events:none;opacity:0;transition:opacity .3s,transform .3s}
+#toast{z-index:60;left:12px;right:96px;top:calc(112px + env(safe-area-inset-top,0px));bottom:auto;transform:translate(0,8px);width:auto;max-width:none;box-sizing:border-box;padding:10px 16px;white-space:normal;overflow-wrap:break-word;height:auto;display:block;border-radius:14px;background:rgba(59,42,30,.5);color:#FFF8EC;box-shadow:0 2px 8px rgba(0,0,0,.18);font-size:15px;line-height:1.55;text-align:center;pointer-events:none;opacity:0;transition:opacity .3s,transform .3s}
 #toast.on{opacity:1;transform:translate(0,0)}
 #joy{position:fixed;z-index:3;left:max(24px,calc(env(safe-area-inset-left,0px) + 12px));bottom:calc(28px + env(safe-area-inset-bottom,0px));width:120px;height:120px;border-radius:50%;background:rgba(255,248,236,.45);border:3px solid rgba(255,248,236,.9);touch-action:none}
 #knob{position:absolute;left:36px;top:36px;width:48px;height:48px;border-radius:50%;background:var(--paper);box-shadow:0 3px 0 var(--paper-edge)}
@@ -146,7 +146,6 @@ body.inside #mini,body.inside #miniN,body.inside #miniTime{display:none}
 <div id="side">
   <button class="sbtn" type="button" data-p="bag"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6z"></path><path d="M9 8V6a3 3 0 0 1 6 0v2"></path></svg>背包</button>
   <button class="sbtn" type="button" data-p="craft"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"></path><path d="M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"></path></svg>配方書</button>
-  <button class="sbtn" type="button" data-p="dress"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4L3 7l2 4 3-1v10h8V10l3 1 2-4-5-3a4 4 0 0 1-8 0z"></path></svg>換裝</button>
   <button class="sbtn" type="button" data-p="inn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-6 8 6"></path><path d="M6 10v9h12v-9"></path><path d="M10 19v-5h4v5"></path></svg>旅人小屋</button>
   <button class="sbtn" type="button" data-p="exchange"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h13l-3-3"></path><path d="M20 16H7l3 3"></path></svg>交換所</button>
   <button class="sbtn" type="button" data-p="save"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"></path><path d="M8 4v5h7V4"></path><path d="M8 20v-6h8v6"></path></svg>存檔</button>
@@ -688,7 +687,7 @@ function hotPress(e){const b=e.target.closest('.slot');if(!b||!b.dataset.k)retur
 $('hotbar').addEventListener('pointerdown',e=>{e.preventDefault();hotPress(e);});
 $('hotbar').addEventListener('click',e=>{if(e.detail===0)hotPress(e);});
 // panels
-const panel=$('panel'),sheet=$('sheet');let craftSt='bench';let panelKind='',bagSel='wood';let bookTab='recipe';let chestMsg='';
+const panel=$('panel'),sheet=$('sheet');let craftSt='bench';let panelKind='',bagSel='wood',bagTab='item';let bookTab='recipe';let chestMsg='';
 // ===== 旅人小屋：招募、派遣、收購（M3）=====
 const ADV=[ // 占位角色（名字與台詞之後再換）
  {id:'a1',name:'小風',r:'R',c:'#9FD6EC',line:'路上撿到好多漂亮的石頭！'},
@@ -850,24 +849,37 @@ function closePanel(){panel.hidden=true;panelKind='';advDetail=null;advSlot=null
 panel.addEventListener('click',e=>{if(e.target===panel)closePanel();});
 addEventListener('keydown',e=>{if(e.key==='Escape'&&!panel.hidden)closePanel();if((e.key==='b'||e.key==='B')&&panel.hidden)openPanel('bag');if((e.key==='r'||e.key==='R')&&panel.hidden)openPanel('book');});
 document.querySelectorAll('.sbtn').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.p;
-  if(k==='bag')openPanel('bag');else if(k==='craft')openPanel('book');else if(k==='save')openPanel('save');else if(k==='dress')openPanel('dress');else if(k==='quest')openPanel('quest');else if(k==='inn')openPanel('inn');else if(k==='exchange')openPanel('exchange');
+  if(k==='bag')openPanel('bag');else if(k==='craft')openPanel('book');else if(k==='save')openPanel('save');else if(k==='quest')openPanel('quest');else if(k==='inn')openPanel('inn');else if(k==='exchange')openPanel('exchange');
   else toast('任務畫面已在 UI 原型裡，M4 接進遊戲。',2200);}));
 function renderPanel(){
   if(panelKind==='chest'){renderChest();return;}
   if(panelKind==='sleep'){renderSleep();return;}
   if(panelKind==='save'){sheet.innerHTML='<div class="shead"><h2>存檔</h2><button class="pbtn" type="button" data-x="close" aria-label="關閉">關閉</button></div>'+'<div class="note">進度會自動存在這台裝置的瀏覽器裡。要搬到其他裝置，就按「匯出」複製存檔碼，到新裝置貼上後按「匯入」。</div>'+'<div class="row"><button class="pbtn go" type="button" data-x="export">匯出存檔碼</button></div>'+'<textarea id="saveTxt" rows="4" aria-label="存檔碼" style="width:100%;box-sizing:border-box;margin-top:8px">'+saveDraft.replace(/</g,'&lt;')+'</textarea>'+'<div class="row"><button class="pbtn" type="button" data-x="import">'+(importArmed?'確定覆蓋目前進度':'匯入存檔碼')+'</button></div>'+'<div class="note" id="saveMsg" role="status">'+saveMsg+'</div>';return;}
   if(panelKind==='bag'){
-    const keys=Object.keys(inv).filter(k=>inv[k]>0);
-    const cells=[];['axe','pick'].forEach(k=>tools[k].forEach((t,i)=>cells.push({k,sel:k+':'+i,t})));
-    keys.forEach(k=>{let n=inv[k];const cap=isF(k)?9:99;let i=0;while(n>0){const c=Math.min(cap,n);cells.push({k,sel:k+':'+i,c});n-=c;i++;}});
-    if(!cells.some(c=>c.sel===bagSel))bagSel=cells[0]?cells[0].sel:'';
-    const selC=cells.find(c=>c.sel===bagSel);const used=cells.length;
-    sheet.innerHTML='<div class="shead"><h2>背包</h2><span class="note">'+used+' / 20 格</span><button class="pbtn" type="button" data-x="close" aria-label="關閉背包">關閉</button></div>'+
-      '<div class="grid">'+cells.map(c=>'<button class="cell'+(c.sel===bagSel?' on':'')+'" type="button" data-sel="'+c.sel+'" aria-label="'+NAME[c.k]+'">'+svg(c.k,40)+(c.t?'<span class="n">'+c.t.dur+'/'+c.t.max+'</span>':'<span class="n">'+c.c+'</span>')+'</button>').join('')+Array.from({length:Math.max(0,BAG_MAX-used)},()=>'<span class="cell" style="opacity:.35;cursor:default" aria-hidden="true"></span>').join('')+'</div>'+
-      (selC?'<div class="info"><b>'+(selC.t?selC.t.kind:NAME[selC.k])+'</b>　'+(selC.t?'耐久 '+selC.t.dur+' / '+selC.t.max+(selC.sel.endsWith(':0')?'（使用中）':'（備用）'):'持有 '+inv[selC.k])+'<br>'+DESC[selC.k]+'</div>':'<div class="info">背包是空的。</div>')+
-      (chestMsg?'<div class="chestmsg" role="status">開出來了！'+chestMsg+'</div>':'')+'<div class="note">材料同一格最多疊 99 個、家具 9 個；工具每把各佔一格。</div>'+
-      (selC&&selC.k==='mush'?'<button class="pbtn go" type="button" data-x="eat">吃一個（體力 +15）</button>':'')+(selC&&selC.k==='chest'?'<button class="pbtn go" type="button" data-x="open">開啟寶箱</button>':'')+
-      hotRowHTML(selC?selC.k:'')+'<div class="shead" style="margin-top:4px"><span class="note">畫面設定</span><button class="pbtn" type="button" data-x="curve">地平線彎曲：'+(curveOn?'開':'關')+'</button></div>';
+    const CONS=['mush','potion','stam','chest'];
+    const catOf=k=>(k==='axe'||k==='pick'||isF(k))?'item':CONS.includes(k)?'cons':'mat';
+    const tabs=[['gear','裝備欄'],['item','物品'],['cons','消耗品'],['mat','材料']];
+    const tb='<div class="btabs" role="tablist">'+tabs.map(([k,l])=>'<button class="btab'+(bagTab===k?' on':'')+'" type="button" role="tab" aria-selected="'+(bagTab===k)+'" style="padding:0 10px" data-bt="'+k+'">'+l+'</button>').join('')+'</div>';
+    const head='<div class="shead"><h2>背包</h2><span class="note">'+slotsUsed()+' / '+BAG_MAX+' 格</span><button class="pbtn" type="button" data-x="close" aria-label="關閉背包">關閉</button></div>'+tb;
+    const foot='<div class="shead" style="margin-top:4px"><span class="note">畫面設定</span><button class="pbtn" type="button" data-x="curve">地平線彎曲：'+(curveOn?'開':'關')+'</button></div>';
+    if(bagTab==='gear'){
+      sheet.innerHTML=head+'<div class="bookbody">'+accListHTML()+'</div>'+foot;
+    }else{
+      const cells=[];
+      if(bagTab==='item')['axe','pick'].forEach(k=>tools[k].forEach((t,i)=>cells.push({k,sel:k+':'+i,t})));
+      Object.keys(inv).filter(k=>inv[k]>0&&catOf(k)===bagTab).forEach(k=>{let n=inv[k];const cap=isF(k)?9:99;let i=0;while(n>0){const c=Math.min(cap,n);cells.push({k,sel:k+':'+i,c});n-=c;i++;}});
+      if(!cells.some(c=>c.sel===bagSel))bagSel=cells[0]?cells[0].sel:'';
+      const selC=cells.find(c=>c.sel===bagSel);
+      const gearRows=bagTab==='item'?Object.keys(gearInv).filter(id=>gearInv[id]>0).map(id=>{const g=gearOf(id);return '<div class="rec"><span class="ic">'+svg(g.icon||'axe',36)+'</span><span class="tx"><span class="nm">'+g.name+' ×'+gearInv[id]+'</span><span class="need">'+GEAR_SLOT[g.slot]+'　戰力 +'+g.pw+'，到旅人小屋的「派遣隊伍」或冒險者頁裝備</span></span></div>';}).join(''):'';
+      const tip=bagTab==='mat'?'<div class="row"><button class="pbtn go" type="button" data-x="openbook">到配方書合成</button></div>':'';
+      sheet.innerHTML=head+
+        (cells.length||gearRows?(cells.length?'<div class="grid">'+cells.map(c=>'<button class="cell'+(c.sel===bagSel?' on':'')+'" type="button" data-sel="'+c.sel+'" aria-label="'+NAME[c.k]+'">'+svg(c.k,40)+(c.t?'<span class="n">'+c.t.dur+'/'+c.t.max+'</span>':'<span class="n">'+c.c+'</span>')+'</button>').join('')+'</div>':''):'<div class="note">這個分頁是空的。</div>')+
+        (selC?'<div class="info"><b>'+(selC.t?selC.t.kind:NAME[selC.k])+'</b>　'+(selC.t?'耐久 '+selC.t.dur+' / '+selC.t.max+(selC.sel.endsWith(':0')?'（使用中）':'（備用）'):'持有 '+inv[selC.k])+'<br>'+(DESC[selC.k]||'')+'</div>':'')+
+        (chestMsg?'<div class="chestmsg" role="status">開出來了！'+chestMsg+'</div>':'')+
+        gearRows+tip+
+        (selC&&selC.k==='mush'?'<button class="pbtn go" type="button" data-x="eat">吃一個（體力 +15）</button>':'')+(selC&&selC.k==='chest'?'<button class="pbtn go" type="button" data-x="open">開啟寶箱</button>':'')+
+        (selC&&bagTab!=='mat'?hotRowHTML(selC.k):'')+foot;
+    }
   }else if(panelKind==='book'){
     const canNow=r=>{const lk=typeof r.locked==='function'?r.locked():r.locked;return !lk&&Object.keys(r.need).every(k=>inv[k]>=r.need[k])&&canMakeAt(r)&&!(r.done&&r.done());};
     const bookRow=r=>{const lk=typeof r.locked==='function'?r.locked():r.locked;const mats=Object.keys(r.need).every(k=>inv[k]>=r.need[k]);const here=canMakeAt(r);const dn=!!(r.done&&r.done());const can=!lk&&mats&&here&&!dn;const why=dn?'已放進飾品欄，可以到換裝裝備。':lk?lk:!here?(r.adv?'需要走到'+STNAME[r.at||r.st]+'旁邊':'需要裝備時空戒指（換裝）'):!mats?'材料不足':'';const has=r.tool&&tools[r.tid||r.id]&&tools[r.tid||r.id].filter(x=>x.kind===r.name).length?' （已有 '+tools[r.tid||r.id].filter(x=>x.kind===r.name).length+' 把）':'';return '<div class="rec st-'+r.st+'"'+(can?'':' style="opacity:.6"')+'><span class="ic">'+svg(r.icon||r.id,36)+'</span><span class="tx"><span class="nm">'+r.name+has+'</span><span class="need">'+Object.keys(r.need).map(k=>NAME[k]+' '+inv[k]+'/'+r.need[k]).join('、')+(why?'<span class="note">　'+why+'</span>':'')+'</span></span><button class="pbtn go" type="button" data-make="'+r.id+'"'+(can?'':' disabled')+'>'+(dn?'已製作':lk?'未解鎖':'製作')+'</button></div>';};
@@ -876,8 +888,6 @@ function renderPanel(){
     const rows=(bookRec.some(canNow)?grp(bookRec.filter(canNow)):'<div class="note">目前沒有可以馬上做的配方。</div>')+'<div class="sec">僅供觀察（目前做不了）</div>'+grp(bookRec.filter(r=>!canNow(r)));
     sheet.innerHTML='<div class="shead"><h2>'+(bookTab==='dex'?'圖鑑':'配方書')+'</h2><button class="pbtn" type="button" data-x="close" aria-label="關閉配方書">關閉</button></div><div class="btabs" role="tablist"><button class="btab'+(bookTab==='dex'?'':' on')+'" type="button" role="tab" aria-selected="'+(bookTab==='dex'?'false':'true')+'" data-btab="recipe">配方</button><button class="btab'+(bookTab==='dex'?' on':'')+'" type="button" role="tab" aria-selected="'+(bookTab==='dex'?'true':'false')+'" data-btab="dex">圖鑑</button></div><div class="bookbody">'+(bookTab==='dex'?dexHTML():rows)+'</div>'+
       '<div class="note">'+(timeRing&&accWorn.includes('ring')?'時空戒指已裝備，可以在島上製作基本道具。':'在島上製作基本道具，需要先裝備時空戒指（到換裝）。')+'家具與進階配方請走到工坊裡對應的工具台、金工台、釜或織布機。</div>';
-  }else if(panelKind==='dress'){
-    sheet.innerHTML='<div class="shead"><h2>換裝</h2><button class="pbtn" type="button" data-x="close" aria-label="關閉">關閉</button></div>'+accListHTML();
   }else if(panelKind==='exchange'){
     sheet.innerHTML=exchangeHTML();
   }else if(panelKind==='inn'){
@@ -927,6 +937,8 @@ sheet.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)retu
   else if(t.dataset.x==='curve'){curveOn=!curveOn;curveU.value=curveOn?CURVE:0;renderPanel();}
   else if(t.dataset.x==='eat'){if(stamina>=maxStam()){toast('體力已經是滿的。',1200);return;}inv.mush--;stamina=Math.min(maxStam(),stamina+15);staUI();hotbarUI();renderPanel();}
   else if(t.dataset.sel){bagSel=t.dataset.sel;chestMsg='';renderPanel();}
+  else if(t.dataset.bt){bagTab=t.dataset.bt;bagSel='';chestMsg='';renderPanel();}
+  else if(t.dataset.x==='openbook'){openPanel('book');}
   else if(t.dataset.make){const r=RECIPES.find(x=>x.id===t.dataset.make);if(!r.when&&!r.noItem){const after=Object.assign({},inv);Object.keys(r.need).forEach(k=>after[k]-=r.need[k]);const keep=inv;inv=after;const ok=r.tool?fits({tool:1}):fits({k:r.id==='potion'?'potion':r.id==='stam'?'stam':r.id,n:1});inv=keep;if(!ok){toast(FULL,2200);return;}}Object.keys(r.need).forEach(k=>inv[k]-=r.need[k]);r.make();hotbarUI();renderPanel();toast('做好了：'+r.name+'！',1400);saveGame();if(!timeRing){timeRing=true;accOwned.ring=true;setTimeout(()=>toast('獲得時空戒指！之後可以在島上任何地方製作基本道具。',3200),1500);}}
 });
 let sitting=null;let importArmed=false,saveMsg='',saveDraft='',skipSave=false;
