@@ -20,10 +20,13 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--sky);color:var(-
 #act,#act2,#joy,#hotbar .slot{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .hud{position:fixed;z-index:2;pointer-events:none}
 .card{background:var(--paper);border-radius:16px;box-shadow:0 3px 0 var(--paper-edge);padding:8px 12px}
-#tl{top:calc(12px + env(safe-area-inset-top,0px));left:max(12px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:6px}
+#topbar{position:fixed;z-index:2;top:calc(12px + env(safe-area-inset-top,0px));left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));display:flex;align-items:center;gap:8px;pointer-events:none}
+#topbar .hud{position:static;flex:none}
+#topbar .card{height:44px;box-sizing:border-box;padding:0 12px;margin:0;display:flex;align-items:center}
+#tl{display:flex;flex-direction:column}
 #tl .t1{font-size:12px;color:var(--ink-soft)}
 #tl .t2{font-size:17px;font-weight:700}
-#tr{top:calc(12px + env(safe-area-inset-top,0px));right:max(12px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+#tr{display:flex;align-items:center}
 .chip{display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px;padding:6px 12px 6px 8px;border-radius:999px}
 .dot{width:14px;height:14px;border-radius:50%}
 .toggle{pointer-events:auto;border:0;font:inherit;font-size:12px;color:var(--ink);cursor:pointer}
@@ -49,8 +52,8 @@ body.laying #act2{display:none!important}
 #mapTitle{position:absolute;left:12px;top:12px;font-size:15px;font-weight:700}
 #mapHint{position:absolute;left:12px;bottom:12px;font-size:12px;color:var(--ink-soft)}
 #tr .money{display:flex;align-items:center;gap:8px;font-weight:700;font-size:16px;border-radius:999px;padding:6px 14px 6px 8px}
-#staHud{top:calc(60px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;border-radius:999px;padding:6px 10px;font-size:12px;color:var(--ink-soft);white-space:nowrap}
-#staBar{width:86px;height:10px;border-radius:5px;background:#EADCC2;overflow:hidden}#staFill{height:10px;background:#6DBB58;width:100%;transition:width .3s}
+#staHud{flex:1 1 0;min-width:0;justify-content:center;gap:6px;border-radius:999px;padding:0 10px;font-size:12px;color:var(--ink-soft);white-space:nowrap}
+#staBar{width:64px;height:10px;border-radius:5px;background:#EADCC2;overflow:hidden}#staFill{height:10px;background:#6DBB58;width:100%;transition:width .3s}
 #side{position:fixed;z-index:3;right:max(12px,env(safe-area-inset-right,0px));top:calc(112px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:10px}
 .sbtn{position:relative;width:58px;height:58px;border-radius:18px;border:0;background:var(--paper);box-shadow:0 3px 0 var(--paper-edge);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:700 11px var(--f-ui);color:var(--ink);cursor:pointer;padding:0}
 .sbtn .dot{position:absolute;top:5px;right:7px;width:12px;height:12px;border-radius:50%;background:#E0663F;border:2px solid #FFF8EC}
@@ -123,13 +126,15 @@ body.inside #mini,body.inside #miniN,body.inside #miniTime{display:none}
 <canvas id="c" aria-label="燈芯島 3D 場景"></canvas>
 <div id="dark" aria-hidden="true"></div>
 
+<div id="topbar">
 <div class="hud" id="tl">
   <div class="card"><div class="t2" id="region">燈芯島 · 小谷村</div></div>
 </div>
+<div class="hud card sta" id="staHud">體力<div id="staBar"><div id="staFill"></div></div></div>
 <div class="hud" id="tr">
   <div class="card money"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="9" fill="#F7C948" stroke="#C99A1E" stroke-width="2"></circle><rect x="9.5" y="6" width="3" height="10" rx="1.5" fill="#C99A1E"></rect></svg><span id="coinTxt">0</span></div>
 </div>
-<div class="hud card sta" id="staHud">體力<div id="staBar"><div id="staFill"></div></div></div>
+</div>
 <div id="side">
   <button class="sbtn" type="button" data-p="bag"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6z"></path><path d="M9 8V6a3 3 0 0 1 6 0v2"></path></svg>背包</button>
   <button class="sbtn" type="button" data-p="craft"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"></path><path d="M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"></path></svg>配方書</button>
