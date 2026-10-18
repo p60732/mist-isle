@@ -455,10 +455,10 @@ function bendSprite(m){
   };return m;
 }
 const puffTex=(function(){const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');
-  const r=g.createRadialGradient(64,64,4,64,64,62);r.addColorStop(0,'rgba(255,255,255,0.95)');r.addColorStop(0.45,'rgba(255,255,255,0.55)');r.addColorStop(1,'rgba(255,255,255,0)');
+  const r=g.createRadialGradient(64,64,4,64,64,62);r.addColorStop(0,'rgba(154,154,154,0.95)');r.addColorStop(0.45,'rgba(154,154,154,0.55)');r.addColorStop(1,'rgba(154,154,154,0)');
   g.fillStyle=r;g.fillRect(0,0,128,128);const t=new THREE.CanvasTexture(c);return t;})();
 function mistSet(test,count,color){
-  const mat=bendSprite(new THREE.SpriteMaterial({map:puffTex,color,transparent:true,opacity:0.8,depthWrite:false,fog:false}));
+  const mat=bendSprite(new THREE.SpriteMaterial({map:puffTex,color:0xFFFFFF,transparent:true,opacity:0.8,depthWrite:false,fog:false}));
   const arr=[];let n=0,guard=0;
   while(n<count&&guard++<8000){
     const x=(rnd()-0.5)*2*R,z=(rnd()-0.5)*2*R;
