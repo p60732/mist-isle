@@ -267,7 +267,7 @@ part(new THREE.BoxGeometry(1.1,1.9,0.2),toon(0x8A5A36),0,0.95,2.15,house,0.06);
 part(new THREE.BoxGeometry(0.9,0.9,0.2),toon(0x9FD6EC),1.6,2.1,2.15,house,0.08);
 // workshop yard: stone floor, sign, chimney, three stations
 const yard=new THREE.Mesh(new THREE.CircleGeometry(7.5,28),toon(0xC9B48E));yard.rotation.x=-Math.PI/2;yard.position.set(8.5,0.04,9);scene.add(yard);
-for(let i=0;i<46;i++){const a=rnd()*Math.PI*2,r=Math.sqrt(rnd())*7;const st=new THREE.Mesh(new THREE.CylinderGeometry(0.45+rnd()*0.35,0.5+rnd()*0.35,0.06,6),toon(rnd()<0.5?0xB7A07A:0xD8C7A2));st.position.set(8.5+Math.cos(a)*r,0.075+i*0.002,9+Math.sin(a)*r);st.rotation.y=rnd()*3;scene.add(st);}
+for(let i=0;i<46;i++){const a=rnd()*Math.PI*2,r=Math.sqrt(rnd())*7;const sm=toon(rnd()<0.5?0xB7A07A:0xD8C7A2,true);sm.polygonOffset=true;sm.polygonOffsetFactor=-i;sm.polygonOffsetUnits=-i*4;const st=new THREE.Mesh(new THREE.CylinderGeometry(0.45+rnd()*0.35,0.5+rnd()*0.35,0.06,6),sm);st.position.set(8.5+Math.cos(a)*r,0.075+i*0.002,9+Math.sin(a)*r);st.rotation.y=rnd()*3;scene.add(st);}
 const chim=part(new THREE.BoxGeometry(0.8,2.2,0.8),toon(0x9A6B52),1.4,5.2,-0.6,house,0.08);
 const smokeM=bend(new THREE.MeshBasicMaterial({color:0xFFFFFF,transparent:true,opacity:0.6,depthWrite:false}));const smokes=[];
 for(let i=0;i<4;i++){const m=new THREE.Mesh(new THREE.SphereGeometry(0.45,8,6),smokeM);house.add(m);smokes.push(m);}
