@@ -818,6 +818,7 @@ const ADV=[ // 占位角色（名字與台詞之後再換）
  {id:'a19',name:'雲海',r:'SSR',c:'#E6F0FA',line:'站在山頂，能看見整座島的霧。'},
  {id:'a20',name:'星河',r:'SSR',c:'#5C6BC0',line:'夜裡的星砂，我會一顆一顆收好。'}];
 const ADV_PULL_COST=100,ADV_TEN_COST=900,ADV_TEN_N=10,ADV_TOKEN_PULL=10,ADV_PITY=50,ADV_PARTY_MAX=5,ADV_STAR_MAX=5,ADV_EXCH_N=3,ADV_ROSTER_MAX=60,ADV_PRESETS=3;
+const ADV_STAR_COST=1;                       // 每次升星消耗的同角色重複卡數
 const ADV_RELEASE={R:1,SR:3,SSR:8};       // 解約換信物
 const ADV_RPW={R:10,SR:20,SSR:35};        // 稀有度基礎戰力
 const ADV_RANK={R:1,SR:2,SSR:3};
@@ -866,9 +867,14 @@ function advRoll(forceSR){pity++;const r=Math.random();
   if(forceSR&&rar==='R')rar=Math.random()<3/20?'SSR':'SR';
   if(rar==='SSR')pity=0;return rar;}
 function advApply(rar){const pool=ADV.filter(a=>a.r===rar);const a=pool[Math.floor(Math.random()*pool.length)];
-  if(adv[a.id]){adv[a.id].stars=Math.min(ADV_STAR_MAX,adv[a.id].stars+1);return {id:a.id,r:a.r,kind:'star',stars:adv[a.id].stars};}
+  if(adv[a.id]){if(adv[a.id].stars>=ADV_STAR_MAX){token+=ADV_RELEASE[a.r];return {id:a.id,r:a.r,kind:'maxdup',tok:ADV_RELEASE[a.r]};}
+    adv[a.id].dup=(adv[a.id].dup||0)+1;return {id:a.id,r:a.r,kind:'dup',dup:adv[a.id].dup};}
   if(Object.keys(adv).length>=ADV_ROSTER_MAX){token+=ADV_RELEASE[a.r];return {id:a.id,r:a.r,kind:'release',tok:ADV_RELEASE[a.r]};}
-  adv[a.id]={stars:1,eq:{}};return {id:a.id,r:a.r,kind:'new',stars:1};}
+  adv[a.id]={stars:1,eq:{},dup:0};return {id:a.id,r:a.r,kind:'new',stars:1};}
+function advStarUp(id){const a=adv[id];if(!a)return;const m=advOf(id);
+  if(a.stars>=ADV_STAR_MAX){toast('已達最高星數。',1400);return;}
+  if((a.dup||0)<ADV_STAR_COST){toast('重複卡不足（需要 '+ADV_STAR_COST+' 張）。',1600);return;}
+  a.dup-=ADV_STAR_COST;a.stars++;saveGame();renderPanel();toast('「'+m.name+'」升為 ★'+a.stars+'！',2000);}
 function advDraw(forceSR){return advApply(advRoll(forceSR));}
 function advPull(){if(coins<ADV_PULL_COST){toast('金幣不足（單抽需要 '+ADV_PULL_COST+' 金幣）。',1600);return;}
   coins-=ADV_PULL_COST;const res=[advDraw(false)];hotbarUI();saveGame();renderPanel();openGacha(res,'single');}
@@ -888,19 +894,19 @@ function gcDone(){if(!gcEl)return;gcClear();
   gcEl.classList.remove('s-shake');gcEl.classList.add('s-open','s-reveal','done');
   gcEl.querySelectorAll('.gc-tc').forEach(c=>c.classList.add('op'));}
 function gcCard(r){const m=advOf(r.id);
-  const tag=r.kind==='new'?'<span class="gc-tag">NEW</span>':r.kind==='star'?'<span class="gc-tag st">★'+r.stars+'</span>':'<span class="gc-tag rl">信物 +'+r.tok+'</span>';
+  const tag=r.kind==='new'?'<span class="gc-tag">NEW</span>':r.kind==='dup'?'<span class="gc-tag st">重複卡 ×'+r.dup+'</span>':r.kind==='maxdup'?'<span class="gc-tag rl">信物 +'+r.tok+'</span>':'<span class="gc-tag rl">信物 +'+r.tok+'</span>';
   return '<div class="gc-card gc-big" style="--c:'+m.c+';--rc:'+RAR_CLR[r.r]+'"><div class="gc-art">'+(ADV_IMG[m.id]?artWrap(m.id,'<img class="gc-img" alt="'+m.name+'" src="'+ADV_IMG[m.id]+'">','width:100%;height:100%',1.2516,-0.1258):'<span class="gc-ini">'+m.name[0]+'</span>')+'</div>'+
     '<div class="gc-info"><span class="gc-rr">'+r.r+'</span><b>'+m.name+'</b><p class="gc-line">'+m.line+'</p></div>'+tag+'</div>';}
 function gcCell(r){const m=advOf(r.id);
-  const tag=r.kind==='new'?'<span class="tc-tag">NEW</span>':r.kind==='star'?'<span class="tc-tag st">★'+r.stars+'</span>':'<span class="tc-tag rl">+'+r.tok+'</span>';
+  const tag=r.kind==='new'?'<span class="tc-tag">NEW</span>':r.kind==='dup'?'<span class="tc-tag st">重複卡</span>':'<span class="tc-tag rl">+'+(r.tok||0)+'</span>';
   return '<div class="gc-tc" style="--c:'+m.c+';--rc:'+RAR_CLR[r.r]+'"><div class="tc-cap"></div><div class="tc-face"><span class="tc-ini">'+m.name[0]+'</span><span class="tc-nm">'+m.name+'</span><span class="tc-rr">'+r.r+'</span>'+tag+'</div></div>';}
 function gcSummary(res){const c={R:0,SR:0,SSR:0};res.forEach(r=>c[r.r]++);
-  const kind={new:0,star:0,release:0};res.forEach(r=>kind[r.kind]++);
+  const kind={new:0,dup:0,maxdup:0,release:0};res.forEach(r=>kind[r.kind]++);
   const news=res.filter(r=>r.kind==='new').map(r=>advOf(r.id).name+'（'+r.r+'）');
   return '<div class="gc-cnt">SSR ×'+c.SSR+'　SR ×'+c.SR+'　R ×'+c.R+'</div>'+
-    '<div>NEW '+kind.new+'　升星 '+kind.star+'　解約換信物 '+kind.release+'</div>'+
+    '<div>NEW '+kind.new+'　重複卡 '+kind.dup+'　滿星換信物 '+kind.maxdup+'　解約換信物 '+kind.release+'</div>'+
     (news.length?'<div class="gc-new">NEW：'+news.join('、')+'</div>':'');}
-function gcMsg(r){return r.kind==='new'?'新的冒險者加入！':r.kind==='star'?'重複抽到，升為 ★'+r.stars+'！':'冒險者已滿，自動解約換得 '+r.tok+' 個信物。';}
+function gcMsg(r){return r.kind==='new'?'新的冒險者加入！':r.kind==='dup'?'重複抽到，獲得 1 張重複卡（持有 '+r.dup+' 張）。':r.kind==='maxdup'?'已達 ★'+ADV_STAR_MAX+'，重複卡換得 '+r.tok+' 個信物。':'冒險者已滿，自動解約換得 '+r.tok+' 個信物。';}
 function openGacha(res,mode){closeGacha();
   const top=res.reduce((b,r)=>ADV_RANK[r.r]>ADV_RANK[b]?r.r:b,'R');
   const el=document.createElement('div');el.id='gacha';el.className='m-'+(mode==='ten'?'ten':'single')+' top-'+top;gcEl=el;
@@ -982,7 +988,7 @@ function advDexHTML(){
 function pullHTML(){
   return '<div class="note">金幣 '+coins+'　信物 '+token+'　距離保底還差 '+(ADV_PITY-pity)+' 抽　冒險者 '+Object.keys(adv).length+' / '+ADV_ROSTER_MAX+'</div>'+
   '<div class="row"><button class="pbtn go" type="button" data-x="pull"'+(coins<ADV_PULL_COST?' disabled':'')+'>單抽（'+ADV_PULL_COST+' 金幣）</button><button class="pbtn go" type="button" data-x="pull10"'+(coins<ADV_TEN_COST?' disabled':'')+'>十連（'+ADV_TEN_COST+' 金幣）</button><button class="pbtn" type="button" data-x="pulltoken"'+(token<ADV_TOKEN_PULL?' disabled':'')+'>信物抽（'+ADV_TOKEN_PULL+' 信物）</button></div>'+
-  '<div class="note">機率：R 80%、SR 17%、SSR 3%；金幣抽與信物抽共用保底，第 '+ADV_PITY+' 抽必出 SSR。十連必定至少 1 位 SR 以上。重複抽到會升星（最高 5 星）。冒險者滿 '+ADV_ROSTER_MAX+' 位時，新抽到的會自動解約換信物。</div>'+advDexHTML();}
+  '<div class="note">機率：R 80%、SR 17%、SSR 3%；金幣抽與信物抽共用保底，第 '+ADV_PITY+' 抽必出 SSR。十連必定至少 1 位 SR 以上。重複抽到會獲得重複卡，在冒險者頁消耗重複卡升星（最高 5 星）。冒險者滿 '+ADV_ROSTER_MAX+' 位時，新抽到的會自動解約換信物。</div>'+advDexHTML();}
 function taskHTML(){
   const tasks=dayTasks();const busy=advBusy();
   const prog=disp.length?disp.map((d,i)=>dispProgressHTML(d,i)).join(''):'<div class="note">目前沒有派遣中的隊伍。</div>';
@@ -1015,6 +1021,7 @@ function advDetailHTML(id){const a=adv[id],m=advOf(id),eq=a.eq||{};const busy=ad
     picker='<div class="sec">選擇'+GEAR_SLOT[advSlot]+'</div>'+(items.length?items.map(g=>'<button class="rec advrow" type="button" data-eqset="'+g.id+'"><span class="tx"><span class="nm">'+g.name+'</span><span class="need">戰力 +'+g.pw+'　持有 '+gearInv[g.id]+'</span></span></button>').join(''):'<div class="note">沒有可用的'+GEAR_SLOT[advSlot]+'，請先到金工台的打鐵舖製作。</div>');}
   return '<div class="shead"><h2>'+m.name+'</h2><button class="pbtn" type="button" data-x="advback">返回</button></div>'+
     '<div class="advhero">'+portrait(m,120)+'<div><div class="nm">'+m.name+'　'+'★'.repeat(a.stars)+'</div><div class="need">'+m.r+'　戰力 '+advPower(id)+'</div><div class="note">'+m.line+'</div></div></div>'+
+    '<div class="sec">升星</div><div class="row"><button class="pbtn go" type="button" data-starup="'+id+'"'+(a.stars>=ADV_STAR_MAX||(a.dup||0)<ADV_STAR_COST?' disabled':'')+'>'+(a.stars>=ADV_STAR_MAX?'已達最高星':'升星（消耗 '+ADV_STAR_COST+' 張重複卡）')+'</button></div><div class="note">持有重複卡 '+(a.dup||0)+' 張。重複抽到會獲得重複卡；已達 ★'+ADV_STAR_MAX+' 時改換信物。</div>'+
     '<div class="sec">裝備</div>'+slots+picker+
     '<div class="sec">解約</div><div class="row"><button class="pbtn" type="button" data-release="'+id+'"'+(busy?' disabled':'')+'>'+(advReleaseArmed===id?'再按一次確認解約':'解約（換 '+ADV_RELEASE[m.r]+' 個信物）')+'</button></div>'+
     '<div class="note">'+(busy?'派遣中不能解約。':'解約後裝備會放回裝備庫，不會消失。')+'</div>';}
@@ -1103,6 +1110,7 @@ sheet.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)retu
   else if(t.dataset.pclose){advEditPreset=null;renderPanel();}
   else if(t.dataset.ptoggle!==undefined){const ps=presets[advEditPreset];const id=t.dataset.ptoggle;const ix=ps.indexOf(id);if(ix>=0)ps.splice(ix,1);else if(ps.length>=ADV_PARTY_MAX){toast('一組隊伍最多 '+ADV_PARTY_MAX+' 人。',1400);return;}else ps.push(id);saveGame();renderPanel();}
   else if(t.dataset.release!==undefined){advRelease(t.dataset.release);}
+  else if(t.dataset.starup!==undefined){advStarUp(t.dataset.starup);}
   else if(t.dataset.advview!==undefined){advDetail=t.dataset.advview;advSlot=null;renderPanel();sheet.scrollTop=0;}
   else if(t.dataset.x==='advback'){advDetail=null;advSlot=null;innTab='roster';renderPanel();}
   else if(t.dataset.task!==undefined){const i=+t.dataset.task;advTask=advTask===i?null:i;renderPanel();}
