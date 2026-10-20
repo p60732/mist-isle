@@ -40,10 +40,10 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--sky);color:var(-
 .advrow.on{outline:3px solid var(--ink);outline-offset:-3px}
 .advhero{display:flex;gap:14px;align-items:center;margin:8px 0}
 #toast{z-index:60;left:12px;right:12px;top:calc(62px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:6px;pointer-events:none;background:none;box-shadow:none;border:0;padding:0;border-radius:0}
-.tl{flex:none;box-sizing:border-box;height:auto;padding:7px 14px;border-radius:14px;background:rgba(59,42,30,.5);color:#FFF8EC;box-shadow:0 2px 8px rgba(0,0,0,.18);font-size:15px;line-height:1.5;overflow:hidden;white-space:nowrap;text-align:center;transition:opacity .35s,transform .35s}
+.tl{flex:none;box-sizing:border-box;height:auto;padding:7px 14px;border-radius:14px;background:rgba(59,42,30,.5);color:#FFF8EC;box-shadow:0 2px 8px rgba(0,0,0,.18);font-size:15px;line-height:1.5;overflow:hidden;white-space:normal;overflow-wrap:anywhere;text-align:center;transition:opacity .35s,transform .35s}
 .tl.old1{opacity:.6}.tl.old2{opacity:.3}
 .tl.out{opacity:0;transform:translateY(-6px)}
-.tl .tx{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tl .tx{display:block}
 #joy{position:fixed;z-index:3;left:max(24px,calc(env(safe-area-inset-left,0px) + 12px));bottom:calc(28px + env(safe-area-inset-bottom,0px));width:120px;height:120px;border-radius:50%;background:rgba(255,248,236,.45);border:3px solid rgba(255,248,236,.9);touch-action:none}
 #knob{position:absolute;left:36px;top:36px;width:48px;height:48px;border-radius:50%;background:var(--paper);box-shadow:0 3px 0 var(--paper-edge)}
 #act{position:fixed;z-index:3;right:max(28px,calc(env(safe-area-inset-right,0px) + 16px));bottom:calc(40px + env(safe-area-inset-bottom,0px));width:96px;height:96px;border-radius:50%;border:0;background:var(--amber);box-shadow:0 5px 0 var(--amber-deep);color:#fff;font:700 19px var(--f-ui);cursor:pointer;touch-action:manipulation}
@@ -604,7 +604,8 @@ function toast(msg,ms){const txt=String(msg).replace(/\n+/g,'　');
   const rows=[...toastEl.querySelectorAll('.tl:not(.out)')];
   rows.forEach((r,k)=>{r.classList.toggle('old1',k===1);r.classList.toggle('old2',k===2);});
   for(let k=TOAST_MAX;k<rows.length;k++)toastFade(rows[k]);
-  setTimeout(()=>toastFade(row),ms||2000);}
+  // 文字多時停留久一點，方便讀完換行後的內容
+  setTimeout(()=>toastFade(row),(ms||2000)+Math.max(0,txt.length-18)*60);}
 const ICON={
  moss:'<path d="M6 40 Q10 24 24 22 Q38 24 42 40 Z" fill="#6F9A4E"/><circle cx="16" cy="32" r="3" fill="#8DB86A"/><circle cx="27" cy="28" r="3.5" fill="#8DB86A"/><circle cx="33" cy="36" r="2.5" fill="#A8CF82"/>',
  fern:'<path d="M24 44 V8" stroke="#4E7A3C" stroke-width="2" fill="none"/><path d="M24 12 Q14 14 10 22 Q18 20 24 20 Z M24 12 Q34 14 38 22 Q30 20 24 20 Z M24 22 Q15 24 12 32 Q20 30 24 30 Z M24 22 Q33 24 36 32 Q28 30 24 30 Z M24 32 Q18 33 16 40 Q22 38 24 38 Z M24 32 Q30 33 32 40 Q26 38 24 38 Z" fill="#7FB069"/>',
