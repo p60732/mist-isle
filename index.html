@@ -662,8 +662,8 @@ let dq={day:1,prog:{},claimed:{}};
 function todayQuests(){let s=Math.imul(day,2654435761)>>>0;const pool=QUESTS.slice();const out=[];for(let i=0;i<3&&pool.length;i++){s=(Math.imul(s,1664525)+1013904223)>>>0;out.push(pool.splice(s%pool.length,1)[0]);}return out;}
 function qAdd(id){if(dq.day!==day)dq={day,prog:{},claimed:{}};dq.prog[id]=(dq.prog[id]||0)+1;if(typeof qDotUI==='function')qDotUI();}
 function rewardText(r){return r.t==='stam'?'體力藥水 ×1':r.t==='coin'?'金幣 +'+r.n:'寶箱 ×1（到背包開啟）';}
-function openOneChest(){if(!inv.chest)return '';inv.chest--;const c=30+Math.floor(Math.random()*31);coins+=c;let msg='寶箱：金幣 +'+c;
-  if(Math.random()<0.25+(accWorn.includes('necklace')?0.03:0)){const k=Math.random()<0.5?'crys':'iron';inv[k]=(inv[k]||0)+1;msg+='，還開出'+NAME[k]+' ×1！';}return msg;}
+function openOneChest(){if(!inv.chest)return '';inv.chest--;const c=30+Math.floor(Math.random()*31);coins+=c;let msg='獲得金幣 +'+c;
+  if(Math.random()<0.25+(accWorn.includes('necklace')?0.03:0)){const k=Math.random()<0.5?'crys':'iron';inv[k]=(inv[k]||0)+1;msg+='、'+NAME[k]+' ×1';}return msg;}
 function claimQuest(id){if(dq.day!==day)dq={day,prog:{},claimed:{}};const q=QUESTS.find(x=>x.id===id);
   if(!q||dq.claimed[id]||(dq.prog[id]||0)<q.need)return;let msg;
   if(q.reward.t==='stam'){if(!fits({k:'stam',n:1})){toast(FULL,2000);return;}inv.stam=(inv.stam||0)+1;msg='獲得體力藥水 ×1';}
@@ -1046,7 +1046,7 @@ sheet.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)retu
   if(t.dataset.x==='close'){importArmed=false;saveMsg='';closePanel();}
   else if(t.dataset.x==='equip'){toggleAcc(t.dataset.k);}
   else if(t.dataset.x==='claim'){claimQuest(t.dataset.q);}
-  else if(t.dataset.x==='open'){if(!inv.chest)return;const msg=openOneChest();chestMsg=msg;hotbarUI();renderPanel();saveGame();}
+  else if(t.dataset.x==='open'){if(!inv.chest)return;const msg=openOneChest();hotbarUI();renderPanel();saveGame();toast(msg,2000);}
   else if(t.dataset.x==='export'){saveGame();try{const code=btoa(unescape(encodeURIComponent(localStorage.getItem(SAVE_KEY)||'')));saveDraft=code;const box=$('saveTxt');box.value=code;box.focus();box.select();saveMsg='存檔碼已產生，請全選複製。';}catch(err){saveMsg='產生失敗，請再試一次。';}renderPanel();}
   else if(t.dataset.x==='import'){const code=(($('saveTxt')||{}).value||saveDraft||'').trim();saveDraft=code;if(!code){saveMsg='請先貼上存檔碼。';renderPanel();return;}let raw=null;try{raw=decodeURIComponent(escape(atob(code)));const d=JSON.parse(raw);if(!d||d.v!==SAVE_V)throw 0;}catch(err){raw=null;}if(!raw){importArmed=false;saveMsg='存檔碼無效，請確認是完整複製的。';renderPanel();return;}if(!importArmed){importArmed=true;saveMsg='再按一次即覆蓋目前進度。';renderPanel();return;}try{localStorage.setItem(SAVE_KEY,raw);skipSave=true;location.reload();}catch(err){saveMsg='無法寫入，請確認瀏覽器允許網站儲存資料。';renderPanel();}}
   else if(t.dataset.sleep){sleepUntil(+t.dataset.sleep);}
