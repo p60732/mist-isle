@@ -855,11 +855,8 @@ const ADV_FACES={a19:{blink:'assets/portraits/a19_blink.jpg',happy:'assets/portr
 const ADV_IMG={a1:'assets/portraits/a1.jpg',a18:'assets/portraits/a18.jpg',a19:'assets/portraits/a19.jpg',a20:'assets/portraits/a20.jpg'};
 // 立繪外層：呼吸、傾斜、眨眼都套在這層；有眨眼設定的角色加上眼皮覆蓋
 // ky/by：立繪被裁切成正方形或卡面比例後，眼睛在顯示框中的高度換算（cover 裁切）
-function artWrap(id,img,style,ky,by){const b=ADV_BLINK[id],f=ADV_FACES[id];
-  if(f){const ex=Object.keys(f).filter(k=>k!=='blink');
-    const faces=(f.blink?'<img class="face fb" alt="" src="'+f.blink+'">':'')+ex.map(k=>'<img class="face fx fx-'+k+'" alt="" src="'+f[k]+'">').join('');
-    return '<span class="lvw live" data-exs="'+['',...ex].join(',')+'" data-ex="" style="'+style+'">'+img+faces+'</span>';}
-  return '<span class="lvw live" style="'+style+'">'+img+(b?b.eyes.map(([x,y])=>'<i class="lid" style="left:'+((x-0.06)*100).toFixed(2)+'%;top:'+(((ky*y+by)-0.05)*100).toFixed(2)+'%;background:'+b.col+'"></i>').join(''):'')+'</span>';}
+// 目前立繪為靜態顯示（動圖效果已取消）；ADV_BLINK / ADV_FACES 資料保留備用
+function artWrap(id,img,style,ky,by){return '<span class="lvw" style="'+style+'">'+img+'</span>';}
 function portrait(m,sz){if(ADV_IMG[m.id])return artWrap(m.id,'<img class="pt" alt="'+m.name+'" src="'+ADV_IMG[m.id]+'" style="width:'+sz+'px;height:'+sz+'px;object-fit:cover;background:'+m.c+'">','width:'+sz+'px;height:'+sz+'px',1.3356,-0.1678);return '<span class="pt" style="background:'+m.c+';width:'+sz+'px;height:'+sz+'px;font-size:'+Math.round(sz*0.42)+'px">'+m.name[0]+'</span>';}
 function advBusy(){return new Set(disp.flatMap(d=>d.ids));}
 // 招募：金幣抽與信物抽共用保底；冒險者滿額時新角色自動解約換信物
@@ -1532,15 +1529,6 @@ if(/[?&]dev=1/.test(location.search)){coins+=5000;ADV.forEach(a=>{if(!adv[a.id]&
 if(purified){lerps.forEach(l=>l.m.color.copy(l.b));rocks.forEach(rockTint);}
 setInterval(saveGame,10000);
 addEventListener('pagehide',saveGame);
-// 點立繪切換表情（只對有表情圖的角色）
-document.addEventListener('click',e=>{const w=e.target.closest&&e.target.closest('.lvw[data-exs]');if(!w)return;
-  const list=w.dataset.exs.split(',');const i=list.indexOf(w.dataset.ex||'');const next=list[(i+1)%list.length];
-  w.dataset.ex=next;w.querySelectorAll('.fx').forEach(f=>{f.style.opacity=(f.classList.contains('fx-'+next))?'1':'0';});});
-// 立繪傾斜：指標移過 .live 時依位置旋轉，離開時回正
-document.addEventListener('pointermove',e=>{const el=e.target.closest&&e.target.closest('.live');if(!el)return;
-  const r=el.getBoundingClientRect();const x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;
-  el.classList.add('tilt');el.style.transform='perspective(420px) rotateY('+(x*14).toFixed(2)+'deg) rotateX('+(-y*10).toFixed(2)+'deg) scale(1.02)';});
-document.addEventListener('pointerout',e=>{const el=e.target.closest&&e.target.closest('.live');if(el&&!el.contains(e.relatedTarget)){el.classList.remove('tilt');el.style.transform='';}});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)saveGame();});
 window.__save={save:saveGame,load:loadGame,key:SAVE_KEY,loaded};
 requestAnimationFrame(frame);
