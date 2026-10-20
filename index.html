@@ -241,6 +241,7 @@ body.inside #mini,body.inside #miniN,body.inside #miniTime{display:none}
   <button class="sbtn" type="button" data-p="exchange"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h13l-3-3"></path><path d="M20 16H7l3 3"></path></svg>交換所</button>
   <button class="sbtn" type="button" data-p="save"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"></path><path d="M8 4v5h7V4"></path><path d="M8 20v-6h8v6"></path></svg>存檔</button>
   <button class="sbtn" type="button" data-p="quest"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4h11v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2h12"></path><path d="M7 4a2 2 0 0 0-2 2v10"></path></svg>任務<span class="dot" id="questDot" hidden></span></button>
+  <button class="sbtn" type="button" data-p="vil"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4 4-6 8-6s8 2 8 6"></path></svg>村民</button>
 </div>
 <div id="hotbar" role="toolbar" aria-label="快捷列"></div>
 <div class="hud" id="toast" role="status" aria-live="polite"></div>
@@ -696,9 +697,68 @@ function claimQuest(id){if(dq.day!==day)dq={day,prog:{},claimed:{}};const q=QUES
   else if(q.reward.t==='coin'){coins+=q.reward.n;msg='獲得金幣 +'+q.reward.n;}
   else{if(!fits({k:'chest',n:1})){toast(FULL,2000);return;}inv.chest=(inv.chest||0)+1;msg='獲得寶箱 ×1';}
   dq.claimed[id]=true;hotbarUI();renderPanel();toast(msg,2200);saveGame();}
-function questHTML(){const cur=dq.day===day;
-  return '<div class="shead"><h2>任務</h2><button class="pbtn" type="button" data-x="close" aria-label="關閉">關閉</button></div>'+
-    '<div class="note">每天早上 5 點更新。達成後按「領取」。</div>'+
+// ===== 任務中心（每日／劇情／懸賞）與村民 =====
+let qTab='daily',vilId=null,vilLine=0,vilLater=false;
+let stg={talk:{},claimed:{}};            // 劇情：已拜訪的村民、已領取的劇情獎勵
+let vis={day:1,got:{}};                  // 村民每日功能是否已領
+let bty={day:1,done:{}};                 // 今日懸賞是否已交付
+const STORY=[
+ {id:'s1',ch:1,t:'拜訪船長潮音，聽聽島上的狀況',check:()=>!!stg.talk.chao,reward:{coin:40}},
+ {id:'s2',ch:1,t:'在釜裡做出淨霧藥劑（紅帽蘑菇 ×3 ＋ 藍水晶 ×1）',check:()=>(inv.potion||0)>0||purified,reward:{coin:60}},
+ {id:'s3',ch:1,t:'把淨霧藥劑帶到火苔之森，淨化灰霧',check:()=>purified,reward:{coin:100}},
+ {id:'s4',ch:1,t:'拜訪藥師星河，聽她說說灰霧的事',check:()=>!!stg.talk.xing,reward:{token:20}}
+];
+const VIL=[
+ {key:'chao',id:'a18',name:'潮音',role:'船長',first:['我是潮音，這片海被灰霧封住好久了。','港口缺材料，我把委託貼在懸賞板上，有空可以幫忙。','灰霧最濃的地方是火苔之森，淨霧藥劑或許用得上。'],later:['懸賞板上的委託今天又換了新的。'],fn:'懸賞板'},
+ {key:'xing',id:'a20',name:'星河',role:'藥師',first:['我是星河，負責研究灰霧。','這灰霧不是自然的，像是有人刻意施下的封印。','需要藥水的話，我這裡每天有一瓶體力藥水。'],later:['藥水今天還有貨，需要的話再來。'],fn:'買體力藥水（40 金幣）'},
+ {key:'xiao',id:'a1',name:'小風',role:'礦工',first:['我是小風，每天都在礦洞挖礦。','挖礦很辛苦，我每天會留一個寶箱給來幫忙的人。'],later:['礦脈每天都會回來，多去敲幾下吧。'],fn:'領取補給寶箱'},
+ {key:'yun',id:'a19',name:'雲海',role:'旅人',first:['我是雲海，四處旅行，最近在島上停下腳步。','你的冒險讓我想起很多故事……這點信物拿去用吧。'],later:['旅途還長，小心腳下。'],fn:'領取餽贈信物 ×2'}
+];
+function visToday(){if(vis.day!==day)vis={day,got:{}};if(bty.day!==day)bty={day,done:{}};}
+function btyList(){let s=(Math.imul(day,2246822519)^0x85EBCA6B)>>>0;const pool=TRIAL_MATS.slice();const out=[];
+  for(let i=0;i<3&&pool.length;i++){s=(Math.imul(s,1664525)+1013904223)>>>0;const k=pool.splice(s%pool.length,1)[0];s=(Math.imul(s,1664525)+1013904223)>>>0;const n=2+(s%3);out.push({k,n,reward:Math.max(10,(SELL_PRICE[k]||3)*n*2)});}return out;}
+function giveReward(r){if(r.coin){coins+=r.coin;return '金幣 +'+r.coin;}if(r.token){token+=r.token;return '信物 +'+r.token;}return '';}
+function storyClaim(id){const s=STORY.find(x=>x.id===id);if(!s||stg.claimed[id]||!s.check())return;
+  const msg=giveReward(s.reward);stg.claimed[id]=true;hotbarUI();saveGame();renderPanel();toast('劇情完成：'+msg,2200);}
+function btyFulfill(i){visToday();const b=btyList()[i];if(!b||bty.done[i])return;
+  if((inv[b.k]||0)<b.n){toast('材料不足（需要 '+NAME[b.k]+' ×'+b.n+'）。',1600);return;}
+  inv[b.k]-=b.n;if(!inv[b.k])delete inv[b.k];coins+=b.reward;bty.done[i]=true;hotbarUI();saveGame();renderPanel();toast('懸賞完成，獲得金幣 +'+b.reward,2000);}
+function vilFn(key){visToday();if(vis.got[key]){toast('今天已經領過了，明天再來。',1600);return;}
+  if(key==='chao'){qTab='bounty';openPanel('quest');return;}
+  let msg='';
+  if(key==='xing'){if(coins<40){toast('金幣不足（需要 40 金幣）。',1600);return;}if(!fits({k:'stam',n:1})){toast(FULL,2000);return;}coins-=40;inv.stam=(inv.stam||0)+1;msg='獲得體力藥水 ×1';}
+  else if(key==='xiao'){if(!fits({k:'chest',n:1})){toast(FULL,2000);return;}inv.chest=(inv.chest||0)+1;msg='獲得寶箱 ×1';}
+  else if(key==='yun'){token+=2;msg='獲得信物 ×2';}
+  vis.got[key]=true;hotbarUI();saveGame();renderPanel();toast(msg,2000);}
+function questTabsHTML(){const tb=[['daily','每日'],['story','劇情'],['bounty','懸賞']];
+  return '<div class="btabs" role="tablist">'+tb.map(([k,l])=>'<button class="btab'+(qTab===k?' on':'')+'" type="button" role="tab" aria-selected="'+(qTab===k)+'" data-qtab="'+k+'">'+l+'</button>').join('')+'</div>';}
+function storyHTML(){const done=STORY.filter(s=>stg.claimed[s.id]).length;
+  let html='<div class="note">第一章：淨霧　'+done+' / '+STORY.length+'</div>';
+  html+=STORY.map(s=>{const got=!!stg.claimed[s.id];const ok=!got&&s.check();
+    return '<div class="rec st-bench"><span class="tx"><span class="nm">'+s.t+'</span><span class="need">獎勵：'+(s.reward.coin?'金幣 +'+s.reward.coin:'信物 +'+s.reward.token)+'</span></span><button class="pbtn go" type="button" data-sclaim="'+s.id+'"'+(ok?'':' disabled')+'>'+(got?'已完成':'領取')+'</button></div>';}).join('');
+  html+='<div class="sec">第二章：潮汐海岸</div><div class="note">尚未開放，完成第一章後繼續。</div>';
+  return html;}
+function bountyHTML(){visToday();const list=btyList();
+  return '<div class="note">潮音的懸賞板，每天更新。交付後領取金幣。</div>'+list.map((b,i)=>{const have=inv[b.k]||0;const done=!!bty.done[i];
+    return '<div class="rec st-bench"><span class="tx"><span class="nm">'+NAME[b.k]+' ×'+b.n+'</span><span class="need">持有 '+have+' / '+b.n+'　獎勵：金幣 +'+b.reward+'</span></span><button class="pbtn go" type="button" data-bty="'+i+'"'+(done||have<b.n?' disabled':'')+'>'+(done?'已交付':'交付')+'</button></div>';}).join('');}
+function vilHTML(){
+  if(!vilId){return '<div class="shead"><h2>村民</h2><button class="pbtn" type="button" data-x="close" aria-label="關閉">關閉</button></div>'+
+    '<div class="note">點一下和村民說話。</div>'+VIL.map(v=>'<button class="rec advrow" type="button" data-vil="'+v.key+'">'+portrait({id:v.id,name:v.name,c:'#E8DCC8'},44)+'<span class="tx"><span class="nm">'+v.name+'　'+v.role+'</span><span class="need">'+v.fn+'</span></span></button>').join('');}
+  const v=VIL.find(x=>x.key===vilId);visToday();
+  const lines=vilLater?v.later:v.first;
+  const shown=lines.slice(0,vilLine+1);const finished=vilLine>=lines.length-1;
+  return '<div class="shead"><h2>'+v.name+'</h2><button class="pbtn" type="button" data-vil="" aria-label="返回">村民列表</button></div>'+
+    '<div class="advhero">'+portrait({id:v.id,name:v.name,c:'#E8DCC8'},120)+'<div><div class="nm">'+v.name+'　'+v.role+'</div></div></div>'+
+    '<div class="rec" style="display:block">'+shown.map(l=>'<p class="gc-line">「'+l+'」</p>').join('')+'</div>'+
+    (finished?'<div class="row"><button class="pbtn go" type="button" data-vfn="'+v.key+'"'+(vis.got[v.key]?' disabled':'')+'>'+(vis.got[v.key]?'今天已領取':v.fn)+'</button></div>':
+    '<div class="row"><button class="pbtn" type="button" data-vline="1">繼續</button></div>');}
+function vilOpen(key){if(!key){vilId=null;renderPanel();return;}
+  vilLater=!!stg.talk[key];stg.talk[key]=true;vilId=key;vilLine=0;saveGame();renderPanel();}
+function questHTML(){
+  return '<div class="shead"><h2>任務</h2><button class="pbtn" type="button" data-x="close" aria-label="關閉">關閉</button></div>'+questTabsHTML()+
+    (qTab==='story'?storyHTML():qTab==='bounty'?bountyHTML():dailyHTML());}
+function dailyHTML(){const cur=dq.day===day;
+  return '<div class="note">每天早上 5 點更新。達成後按「領取」。</div>'+
     todayQuests().map(q=>{const p=Math.min(q.need,(cur&&dq.prog[q.id])||0);const got=!!(cur&&dq.claimed[q.id]);const done=p>=q.need;
       return '<div class="rec st-bench"><span class="tx"><span class="nm">'+q.name+'</span><span class="need">進度 '+p+' / '+q.need+'　獎勵：'+rewardText(q.reward)+'</span></span><button class="pbtn go" type="button" data-x="claim" data-q="'+q.id+'"'+(done&&!got?'':' disabled')+'>'+(got?'已領取':'領取')+'</button></div>';}).join('');}
 const seenN=()=>TRIAL_MATS.filter(k=>seen.has(k)).length;
@@ -1041,7 +1101,7 @@ function closePanel(){panel.hidden=true;panelKind='';advDetail=null;advSlot=null
 panel.addEventListener('click',e=>{if(e.target===panel)closePanel();});
 addEventListener('keydown',e=>{if(e.key==='Escape'&&!panel.hidden)closePanel();if((e.key==='b'||e.key==='B')&&panel.hidden)openPanel('bag');if((e.key==='r'||e.key==='R')&&panel.hidden)openPanel('book');});
 document.querySelectorAll('.sbtn').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.p;
-  if(k==='bag')openPanel('bag');else if(k==='craft')openPanel('book');else if(k==='save')openPanel('save');else if(k==='quest')openPanel('quest');else if(k==='inn')openPanel('inn');else if(k==='exchange')openPanel('exchange');
+  if(k==='bag')openPanel('bag');else if(k==='craft')openPanel('book');else if(k==='save')openPanel('save');else if(k==='quest'){qTab='daily';openPanel('quest');}else if(k==='vil'){vilId=null;openPanel('vil');}else if(k==='inn')openPanel('inn');else if(k==='exchange')openPanel('exchange');
   else toast('任務功能即將推出。',2200);}));
 function renderPanel(){
   if(panelKind==='chest'){renderChest();return;}
@@ -1084,6 +1144,8 @@ function renderPanel(){
     sheet.innerHTML=exchangeHTML();
   }else if(panelKind==='inn'){
     sheet.innerHTML=innHTML();
+  }else if(panelKind==='vil'){
+    sheet.innerHTML=vilHTML();
   }else if(panelKind==='quest'){
     sheet.innerHTML=questHTML();
   }else if(panelKind==='craft'){
@@ -1101,6 +1163,12 @@ sheet.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)retu
   if(t.dataset.x==='close'){importArmed=false;saveMsg='';closePanel();}
   else if(t.dataset.x==='equip'){toggleAcc(t.dataset.k);}
   else if(t.dataset.x==='claim'){claimQuest(t.dataset.q);}
+  else if(t.dataset.qtab!==undefined){qTab=t.dataset.qtab;renderPanel();}
+  else if(t.dataset.sclaim!==undefined){storyClaim(t.dataset.sclaim);}
+  else if(t.dataset.bty!==undefined){btyFulfill(+t.dataset.bty);}
+  else if(t.dataset.vil!==undefined){vilOpen(t.dataset.vil);}
+  else if(t.dataset.vline!==undefined){vilLine++;renderPanel();}
+  else if(t.dataset.vfn!==undefined){vilFn(t.dataset.vfn);}
   else if(t.dataset.x==='open'){if(!inv.chest)return;const msg=openOneChest();hotbarUI();renderPanel();saveGame();toast(msg,2000);}
   else if(t.dataset.x==='export'){saveGame();try{const code=btoa(unescape(encodeURIComponent(localStorage.getItem(SAVE_KEY)||'')));saveDraft=code;const box=$('saveTxt');box.value=code;box.focus();box.select();saveMsg='存檔碼已產生，請全選複製。';}catch(err){saveMsg='產生失敗，請再試一次。';}renderPanel();}
   else if(t.dataset.x==='import'){const code=(($('saveTxt')||{}).value||saveDraft||'').trim();saveDraft=code;if(!code){saveMsg='請先貼上存檔碼。';renderPanel();return;}let raw=null;try{raw=decodeURIComponent(escape(atob(code)));const d=JSON.parse(raw);if(!d||d.v!==SAVE_V)throw 0;}catch(err){raw=null;}if(!raw){importArmed=false;saveMsg='存檔碼無效，請確認是完整複製的。';renderPanel();return;}if(!importArmed){importArmed=true;saveMsg='再按一次即覆蓋目前進度。';renderPanel();return;}try{localStorage.setItem(SAVE_KEY,raw);skipSave=true;location.reload();}catch(err){saveMsg='無法寫入，請確認瀏覽器允許網站儲存資料。';renderPanel();}}
@@ -1497,7 +1565,7 @@ function frame(now){
 // ---- M1 save system: localStorage, versioned, auto-save. Trees/rocks/mushrooms are not saved (they reset each day).
 const SAVE_KEY='mist-isle-save',SAVE_V=1;
 function saveGame(){if(skipSave)return;try{const pos=inside?[7.3,7.1]:inCave?[CAVE_E.x,CAVE_E.z+4.3]:[player.position.x,player.position.z];
-  const d={v:SAVE_V,savedAt:Date.now(),inv,tools,store,storeTools,BAG_MAX,day,gameMin,stamina,purified,timeRing,accOwned,accWorn,seen:[...seen],coins,dq,hot:hotCfg,
+  const d={v:SAVE_V,savedAt:Date.now(),inv,tools,store,storeTools,BAG_MAX,day,gameMin,stamina,purified,timeRing,accOwned,accWorn,seen:[...seen],coins,dq,stg,vis,bty,hot:hotCfg,
     furn:items.filter(it=>!it.fixed).map(it=>({id:it.id,ix:it.ix,iz:it.iz,rot:it.rot})),fixedPos:items.filter(it=>it.fixed).map(it=>({id:it.id,ix:it.ix,iz:it.iz,rot:it.rot})),pos,
     adv,pity,disp,token,gearInv,presets,world:{trees:trees.map(t=>({x:t.x,z:t.z,s:t.state==='falling'?'stump':t.state,h:t.hits,w:t.wood,b:t.branches,sh:t.stumpHits})),rocks:rocks.map(r=>({x:r.x,z:r.z,s:r.state,h:r.hits})),ores:caveOres.map(o=>({s:o.state,h:o.hits})),nodes:nodes.map(n=>({k:n.kind,x:n.x,z:n.z,t:!!n.taken})),mushes:mushes.map(m=>!!m.alive)}};
   localStorage.setItem(SAVE_KEY,JSON.stringify(d));}catch(e){}}
@@ -1521,7 +1589,7 @@ function loadGame(){let d=null;try{d=JSON.parse(localStorage.getItem(SAVE_KEY)||
   inv=Object.assign({mush:0,wood:0,stone:2,crys:0,potion:0,stam:0,branch:0,clay:0,iron:0,flax:0,cloth:0,moon:0,dew:0},d.inv||{});
   tools=d.tools||{axe:[],pick:[]};store=d.store||{};storeTools=d.storeTools||{axe:[],pick:[]};
   BAG_MAX=d.BAG_MAX||20;day=d.day||1;gameMin=(typeof d.gameMin==='number')?d.gameMin:gameMin;
-  stamina=(typeof d.stamina==='number')?d.stamina:stamina;coins=d.coins||0;dq=(d.dq&&d.dq.day===day)?d.dq:{day,prog:{},claimed:{}};timeRing=!!d.timeRing;accOwned=Object.assign({},d.accOwned||{});if(timeRing)accOwned.ring=true;accWorn=(Array.isArray(d.accWorn)?d.accWorn:(d.acc?[d.acc]:[])).filter(k=>accOwned[k]).slice(0,ACC_SLOTS);seen=new Set((d.seen||[]).filter(k=>TRIAL_MATS.indexOf(k)>=0));
+  stamina=(typeof d.stamina==='number')?d.stamina:stamina;coins=d.coins||0;dq=(d.dq&&d.dq.day===day)?d.dq:{day,prog:{},claimed:{}};stg=Object.assign({talk:{},claimed:{}},d.stg||{});vis=(d.vis&&d.vis.day===day)?d.vis:{day,got:{}};bty=(d.bty&&d.bty.day===day)?d.bty:{day,done:{}};timeRing=!!d.timeRing;accOwned=Object.assign({},d.accOwned||{});if(timeRing)accOwned.ring=true;accWorn=(Array.isArray(d.accWorn)?d.accWorn:(d.acc?[d.acc]:[])).filter(k=>accOwned[k]).slice(0,ACC_SLOTS);seen=new Set((d.seen||[]).filter(k=>TRIAL_MATS.indexOf(k)>=0));
   items.filter(it=>!it.fixed).forEach(removeItem);
   (d.fixedPos||[]).forEach(f=>{const it=items.find(x=>x.fixed&&x.id===f.id);if(!it||!FIXED[f.id])return;const o={ix:it.ix,iz:it.iz,rot:it.rot};
     stationRemove(it);removeItem(it);
