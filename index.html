@@ -143,6 +143,17 @@ body.inside #mini,body.inside #miniN,body.inside #miniTime{display:none}
 .lid{position:absolute;width:12%;height:10%;border-radius:40% 40% 50% 50%;transform:scaleY(0);transform-origin:50% 0;animation:lidBlink 4.5s infinite;pointer-events:none}
 @keyframes lidBlink{0%,92%,100%{transform:scaleY(0)}95%,96.5%{transform:scaleY(1)}}
 @keyframes lvBreath{0%,100%{transform:scale(1)}50%{transform:scale(1.018) translateY(-1px)}}
+.dex{margin-top:16px}
+.dex-h{font-weight:700;margin-bottom:8px}
+.dex-g{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.dx-t{position:relative;border:0;padding:0;border-radius:12px;background:var(--c,#ccc);box-shadow:0 2px 0 var(--paper-edge);overflow:hidden;display:flex;flex-direction:column;font:inherit;color:#fff;cursor:pointer}
+.dx-art{position:relative;aspect-ratio:3/4;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.dx-img{width:100%;height:100%;object-fit:cover;display:block}
+.dx-ini{font-size:34px;font-weight:900;text-shadow:0 3px 0 rgba(0,0,0,.2)}
+.dx-nm{font-size:12px;font-weight:700;padding:3px 4px 0;background:rgba(0,0,0,.3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dx-rr{font-size:10px;font-weight:800;padding:0 4px 3px;background:rgba(0,0,0,.3);color:var(--rc,#fff)}
+.dx-t.lock .dx-art{filter:grayscale(1) brightness(.5)}
+.dx-t.lock{opacity:.85}
 /* 抽卡動畫覆蓋層 */
 #gacha{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));background:radial-gradient(ellipse at 50% 40%,#2e2644 0%,#110d1c 72%);color:#fff;overflow:hidden;-webkit-user-select:none;user-select:none;touch-action:manipulation}
 #gacha .gc-title{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));left:0;right:0;text-align:center;font-size:13px;letter-spacing:.25em;color:#cbbfe6}
@@ -963,10 +974,18 @@ function exchangeHTML(){
   else{const mats=TRIAL_MATS.filter(k=>inv[k]>=ADV_EXCH_N);
     body='<div class="note">同種材料 '+ADV_EXCH_N+' 個換 1 信物　目前信物 '+token+'（'+ADV_TOKEN_PULL+' 個信物可到旅人小屋抽一次）</div><div class="row">'+(mats.length?mats.map(k=>'<button class="pbtn" type="button" data-x="exch" data-k="'+k+'">'+NAME[k]+' ×'+ADV_EXCH_N+'</button>').join(''):'<div class="note">沒有足夠的材料（每種需要 '+ADV_EXCH_N+' 個）。</div>')+'</div>';}
   return '<div class="shead"><h2>交換所</h2><button class="pbtn" type="button" data-x="close" aria-label="關閉">關閉</button></div>'+tabs+'<div class="bookbody">'+body+'</div>';}
+// 角色圖鑑：列出全部角色；未獲得的會變灰、名字以「？？？」顯示，點已獲得的可看詳情
+function advDexHTML(){
+  const got=ADV.filter(a=>adv[a.id]).length;
+  const tiles=ADV.map(m=>{const own=!!adv[m.id];const img=ADV_IMG[m.id];
+    const art=img?'<img class="dx-img" alt="" src="'+img+'">':'<span class="dx-ini">'+(own?m.name[0]:'？')+'</span>';
+    return '<button class="dx-t'+(own?'':' lock')+'" type="button" data-dex="'+m.id+'" style="--c:'+m.c+';--rc:'+RAR_CLR[m.r]+'">'+
+      '<span class="dx-art">'+art+'</span><span class="dx-nm">'+(own?m.name:'？？？')+'</span><span class="dx-rr">'+m.r+(own?' ★'+adv[m.id].stars:'')+'</span></button>';}).join('');
+  return '<div class="dex"><div class="dex-h">角色圖鑑　<span class="note">已獲得 '+got+' / '+ADV.length+'</span></div><div class="dex-g">'+tiles+'</div></div>';}
 function pullHTML(){
   return '<div class="note">金幣 '+coins+'　信物 '+token+'　距離保底還差 '+(ADV_PITY-pity)+' 抽　冒險者 '+Object.keys(adv).length+' / '+ADV_ROSTER_MAX+'</div>'+
   '<div class="row"><button class="pbtn go" type="button" data-x="pull"'+(coins<ADV_PULL_COST?' disabled':'')+'>單抽（'+ADV_PULL_COST+' 金幣）</button><button class="pbtn go" type="button" data-x="pull10"'+(coins<ADV_TEN_COST?' disabled':'')+'>十連（'+ADV_TEN_COST+' 金幣）</button><button class="pbtn" type="button" data-x="pulltoken"'+(token<ADV_TOKEN_PULL?' disabled':'')+'>信物抽（'+ADV_TOKEN_PULL+' 信物）</button></div>'+
-  '<div class="note">機率：R 80%、SR 17%、SSR 3%；金幣抽與信物抽共用保底，第 '+ADV_PITY+' 抽必出 SSR。十連必定至少 1 位 SR 以上。重複抽到會升星（最高 5 星）。冒險者滿 '+ADV_ROSTER_MAX+' 位時，新抽到的會自動解約換信物。</div>';}
+  '<div class="note">機率：R 80%、SR 17%、SSR 3%；金幣抽與信物抽共用保底，第 '+ADV_PITY+' 抽必出 SSR。十連必定至少 1 位 SR 以上。重複抽到會升星（最高 5 星）。冒險者滿 '+ADV_ROSTER_MAX+' 位時，新抽到的會自動解約換信物。</div>'+advDexHTML();}
 function taskHTML(){
   const tasks=dayTasks();const busy=advBusy();
   const prog=disp.length?disp.map((d,i)=>dispProgressHTML(d,i)).join(''):'<div class="note">目前沒有派遣中的隊伍。</div>';
@@ -1093,6 +1112,7 @@ sheet.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)retu
   else if(t.dataset.eqpick!==undefined){advSlot=t.dataset.eqpick;renderPanel();}
   else if(t.dataset.eqset!==undefined){gearEquip(advDetail,gearOf(t.dataset.eqset).slot,t.dataset.eqset);}
   else if(t.dataset.eqoff!==undefined){gearEquip(advDetail,t.dataset.eqoff,null);}
+  else if(t.dataset.dex!==undefined){const id=t.dataset.dex;if(adv[id]){advDetail=id;advSlot=null;innTab='roster';renderPanel();sheet.scrollTop=0;}else toast('尚未獲得這位冒險者。',1400);}
   else if(t.dataset.x==='pull'){advPull();}
   else if(t.dataset.x==='pull10'){advPull10();}
   else if(t.dataset.x==='pulltoken'){advPullToken();}
