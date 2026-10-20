@@ -713,7 +713,7 @@ function catUsed(cat,extra){const v=Object.assign({},inv);let n=0;
 const fits=e=>catUsed(e.tool?'item':catOfItem(e.k),e)<=BAG_MAX;
 const cellCat=c=>c.t?'item':catOfItem(c.k);
 const FULL='背包已滿';
-let stamina=100;
+let stamina=100;const STA_OFFLINE_MIN=3;let offlineGain=0;
 const maxStam=()=>accWorn.includes('earring')?120:100;
 const RECIPES=[
  {id:'axe',st:'bench',name:'簡易斧',need:{branch:5},make:()=>{tools.axe.push({kind:'簡易斧',dur:40,max:40,fell:false});},tool:true,note:'耐久 40，砍不倒樹'},
@@ -1437,7 +1437,7 @@ function frame(now){
 // ---- M1 save system: localStorage, versioned, auto-save. Trees/rocks/mushrooms are not saved (they reset each day).
 const SAVE_KEY='mist-isle-save',SAVE_V=1;
 function saveGame(){if(skipSave)return;try{const pos=inside?[7.3,7.1]:inCave?[CAVE_E.x,CAVE_E.z+4.3]:[player.position.x,player.position.z];
-  const d={v:SAVE_V,inv,tools,store,storeTools,BAG_MAX,day,gameMin,stamina,purified,timeRing,accOwned,accWorn,seen:[...seen],coins,dq,hot:hotCfg,
+  const d={v:SAVE_V,savedAt:Date.now(),inv,tools,store,storeTools,BAG_MAX,day,gameMin,stamina,purified,timeRing,accOwned,accWorn,seen:[...seen],coins,dq,hot:hotCfg,
     furn:items.filter(it=>!it.fixed).map(it=>({id:it.id,ix:it.ix,iz:it.iz,rot:it.rot})),fixedPos:items.filter(it=>it.fixed).map(it=>({id:it.id,ix:it.ix,iz:it.iz,rot:it.rot})),pos,
     adv,pity,disp,token,gearInv,presets,world:{trees:trees.map(t=>({x:t.x,z:t.z,s:t.state==='falling'?'stump':t.state,h:t.hits,w:t.wood,b:t.branches,sh:t.stumpHits})),rocks:rocks.map(r=>({x:r.x,z:r.z,s:r.state,h:r.hits})),ores:caveOres.map(o=>({s:o.state,h:o.hits})),nodes:nodes.map(n=>({k:n.kind,x:n.x,z:n.z,t:!!n.taken})),mushes:mushes.map(m=>!!m.alive)}};
   localStorage.setItem(SAVE_KEY,JSON.stringify(d));}catch(e){}}
@@ -1473,8 +1473,11 @@ function loadGame(){let d=null;try{d=JSON.parse(localStorage.getItem(SAVE_KEY)||
   applyWorld(d.world);
   adv=(d.adv&&typeof d.adv==='object')?d.adv:{};pity=d.pity||0;disp=(Array.isArray(d.disp)?d.disp:[]).map(x=>Object.assign({},x,{task:x.task||{name:'派遣',terrain:'forest',diff:1,hours:3,need:60,n:2},ok:x.ok!==false,ids:x.ids||[]}));token=d.token||0;advDetail=null;advTask=null;advSlot=null;advEditPreset=null;advReleaseArmed=null;dispReadyShown=0;gearInv=(d.gearInv&&typeof d.gearInv==='object')?d.gearInv:{};presets=(Array.isArray(d.presets)&&d.presets.length===ADV_PRESETS)?d.presets:[[],[],[]];
   if(Array.isArray(d.hot)&&d.hot.length===5)hotCfg=d.hot.map(k=>k||null);
+  // 離線期間體力恢復：每 STA_OFFLINE_MIN 真實分鐘 +1，最多到上限
+  if(typeof d.savedAt==='number'&&stamina<maxStam()){const mins=Math.floor((Date.now()-d.savedAt)/60000);const gain=Math.min(maxStam()-stamina,Math.floor(mins/STA_OFFLINE_MIN));if(gain>0){stamina+=gain;offlineGain=gain;}}
   tierShownLv=tierNow();hotbarUI();staUI();return true;}
 const loaded=loadGame();
+if(offlineGain>0)setTimeout(()=>toast('離線期間體力 +'+offlineGain,2000),1200);
 // 測試用：網址加 ?dev=1 時每次載入加 5000 金幣（正式上線前可移除）
 if(/[?&]dev=1/.test(location.search)){coins+=5000;saveGame();}
 if(purified){lerps.forEach(l=>l.m.color.copy(l.b));rocks.forEach(rockTint);}
