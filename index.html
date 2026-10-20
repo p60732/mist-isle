@@ -238,10 +238,8 @@ body.inside #mini,body.inside #miniN,body.inside #miniTime{display:none}
   <button class="sbtn" type="button" data-p="bag"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6z"></path><path d="M9 8V6a3 3 0 0 1 6 0v2"></path></svg>背包</button>
   <button class="sbtn" type="button" data-p="craft"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"></path><path d="M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"></path></svg>配方書</button>
   <button class="sbtn" type="button" data-p="inn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-6 8 6"></path><path d="M6 10v9h12v-9"></path><path d="M10 19v-5h4v5"></path></svg>旅人小屋</button>
-  <button class="sbtn" type="button" data-p="exchange"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h13l-3-3"></path><path d="M20 16H7l3 3"></path></svg>交換所</button>
   <button class="sbtn" type="button" data-p="save"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"></path><path d="M8 4v5h7V4"></path><path d="M8 20v-6h8v6"></path></svg>存檔</button>
   <button class="sbtn" type="button" data-p="quest"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4h11v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2h12"></path><path d="M7 4a2 2 0 0 0-2 2v10"></path></svg>任務<span class="dot" id="questDot" hidden></span></button>
-  <button class="sbtn" type="button" data-p="vil"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B2A1E" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4 4-6 8-6s8 2 8 6"></path></svg>村民</button>
 </div>
 <div id="hotbar" role="toolbar" aria-label="快捷列"></div>
 <div class="hud" id="toast" role="status" aria-live="polite"></div>
@@ -730,7 +728,7 @@ function vilFn(key){visToday();if(vis.got[key]){toast('今天已經領過了，�
   else if(key==='xiao'){if(!fits({k:'chest',n:1})){toast(FULL,2000);return;}inv.chest=(inv.chest||0)+1;msg='獲得寶箱 ×1';}
   else if(key==='yun'){token+=2;msg='獲得信物 ×2';}
   vis.got[key]=true;hotbarUI();saveGame();renderPanel();toast(msg,2000);}
-function questTabsHTML(){const tb=[['daily','每日'],['story','劇情'],['bounty','懸賞']];
+function questTabsHTML(){const tb=[['daily','每日'],['story','劇情'],['bounty','懸賞'],['talk','對話']];
   return '<div class="btabs" role="tablist">'+tb.map(([k,l])=>'<button class="btab'+(qTab===k?' on':'')+'" type="button" role="tab" aria-selected="'+(qTab===k)+'" data-qtab="'+k+'">'+l+'</button>').join('')+'</div>';}
 function storyHTML(){const done=STORY.filter(s=>stg.claimed[s.id]).length;
   let html='<div class="note">第一章：淨霧　'+done+' / '+STORY.length+'</div>';
@@ -742,12 +740,11 @@ function bountyHTML(){visToday();const list=btyList();
   return '<div class="note">潮音的懸賞板，每天更新。交付後領取金幣。</div>'+list.map((b,i)=>{const have=inv[b.k]||0;const done=!!bty.done[i];
     return '<div class="rec st-bench"><span class="tx"><span class="nm">'+NAME[b.k]+' ×'+b.n+'</span><span class="need">持有 '+have+' / '+b.n+'　獎勵：金幣 +'+b.reward+'</span></span><button class="pbtn go" type="button" data-bty="'+i+'"'+(done||have<b.n?' disabled':'')+'>'+(done?'已交付':'交付')+'</button></div>';}).join('');}
 function vilHTML(){
-  if(!vilId){return '<div class="shead"><h2>村民</h2><button class="pbtn" type="button" data-x="close" aria-label="關閉">關閉</button></div>'+
-    '<div class="note">點一下和村民說話。</div>'+VIL.map(v=>'<button class="rec advrow" type="button" data-vil="'+v.key+'">'+portrait({id:v.id,name:v.name,c:'#E8DCC8'},44)+'<span class="tx"><span class="nm">'+v.name+'　'+v.role+'</span><span class="need">'+v.fn+'</span></span></button>').join('');}
+  if(!vilId){return '<div class="note">點一下和村民說話。</div>'+VIL.map(v=>'<button class="rec advrow" type="button" data-vil="'+v.key+'">'+portrait({id:v.id,name:v.name,c:'#E8DCC8'},44)+'<span class="tx"><span class="nm">'+v.name+'　'+v.role+'</span><span class="need">'+v.fn+'</span></span></button>').join('');}
   const v=VIL.find(x=>x.key===vilId);visToday();
   const lines=vilLater?v.later:v.first;
   const shown=lines.slice(0,vilLine+1);const finished=vilLine>=lines.length-1;
-  return '<div class="shead"><h2>'+v.name+'</h2><button class="pbtn" type="button" data-vil="" aria-label="返回">村民列表</button></div>'+
+  return '<div class="row"><button class="pbtn" type="button" data-vil="">← 返回列表</button></div>'+
     '<div class="advhero">'+portrait({id:v.id,name:v.name,c:'#E8DCC8'},120)+'<div><div class="nm">'+v.name+'　'+v.role+'</div></div></div>'+
     '<div class="rec" style="display:block">'+shown.map(l=>'<p class="gc-line">「'+l+'」</p>').join('')+'</div>'+
     (finished?'<div class="row"><button class="pbtn go" type="button" data-vfn="'+v.key+'"'+(vis.got[v.key]?' disabled':'')+'>'+(vis.got[v.key]?'今天已領取':v.fn)+'</button></div>':
@@ -756,7 +753,7 @@ function vilOpen(key){if(!key){vilId=null;renderPanel();return;}
   vilLater=!!stg.talk[key];stg.talk[key]=true;vilId=key;vilLine=0;saveGame();renderPanel();}
 function questHTML(){
   return '<div class="shead"><h2>任務</h2><button class="pbtn" type="button" data-x="close" aria-label="關閉">關閉</button></div>'+questTabsHTML()+
-    (qTab==='story'?storyHTML():qTab==='bounty'?bountyHTML():dailyHTML());}
+    (qTab==='story'?storyHTML():qTab==='bounty'?bountyHTML():qTab==='talk'?vilHTML():dailyHTML());}
 function dailyHTML(){const cur=dq.day===day;
   return '<div class="note">每天早上 5 點更新。達成後按「領取」。</div>'+
     todayQuests().map(q=>{const p=Math.min(q.need,(cur&&dq.prog[q.id])||0);const got=!!(cur&&dq.claimed[q.id]);const done=p>=q.need;
@@ -1041,7 +1038,7 @@ function exchangeHTML(){
     body='<div class="note">金幣 '+coins+'</div>'+(rows||'<div class="note">背包裡沒有可以賣的材料。</div>');}
   else{const mats=TRIAL_MATS.filter(k=>inv[k]>=ADV_EXCH_N);
     body='<div class="note">同種材料 '+ADV_EXCH_N+' 個換 1 信物　目前信物 '+token+'（'+ADV_TOKEN_PULL+' 個信物可到旅人小屋抽一次）</div><div class="row">'+(mats.length?mats.map(k=>'<button class="pbtn" type="button" data-x="exch" data-k="'+k+'">'+NAME[k]+' ×'+ADV_EXCH_N+'</button>').join(''):'<div class="note">沒有足夠的材料（每種需要 '+ADV_EXCH_N+' 個）。</div>')+'</div>';}
-  return '<div class="shead"><h2>交換所</h2><button class="pbtn" type="button" data-x="close" aria-label="關閉">關閉</button></div>'+tabs+'<div class="bookbody">'+body+'</div>';}
+  return tabs+'<div class="bookbody">'+body+'</div>';}
 // 角色圖鑑：列出全部角色；未獲得的會變灰、名字以「？？？」顯示，點已獲得的可看詳情
 function advDexHTML(){
   const got=ADV.filter(a=>adv[a.id]).length;
@@ -1092,9 +1089,9 @@ function advDetailHTML(id){const a=adv[id],m=advOf(id),eq=a.eq||{};const busy=ad
     '<div class="note">'+(busy?'派遣中不能解約。':'解約後裝備會放回裝備庫，不會消失。')+'</div>';}
 function innHTML(){
   if(advDetail&&advOf(advDetail)&&adv[advDetail])return advDetailHTML(advDetail);
-  const tabs=[['pull','招募'],['task','派遣任務'],['party','派遣隊伍'],['roster','冒險者']];
+  const tabs=[['pull','招募'],['task','派遣任務'],['party','派遣隊伍'],['roster','冒險者'],['exch','交換所']];
   const tb='<div class="btabs" role="tablist">'+tabs.map(([k,l])=>'<button class="btab'+(innTab===k?' on':'')+'" type="button" role="tab" aria-selected="'+(innTab===k)+'" style="padding:0 12px" data-itab="'+k+'">'+l+'</button>').join('')+'</div>';
-  const body=innTab==='task'?taskHTML():innTab==='party'?partyHTML():innTab==='roster'?rosterHTML():pullHTML();
+  const body=innTab==='task'?taskHTML():innTab==='party'?partyHTML():innTab==='roster'?rosterHTML():innTab==='exch'?exchangeHTML():pullHTML();
   return '<div class="shead"><h2>旅人小屋</h2><button class="pbtn" type="button" data-x="close" aria-label="關閉">關閉</button></div>'+tb+'<div class="bookbody">'+body+'</div>';}
 function openPanel(k){chestMsg='';panelKind=k;panel.hidden=false;jx=jy=0;knob.style.transform='';renderPanel();sheet.scrollTop=0;}
 function closePanel(){panel.hidden=true;panelKind='';advDetail=null;advSlot=null;advEditPreset=null;advReleaseArmed=null;}
@@ -1140,12 +1137,8 @@ function renderPanel(){
     const rows=(bookRec.some(canNow)?grp(bookRec.filter(canNow)):'<div class="note">目前沒有可以馬上做的配方。</div>')+'<div class="sec">僅供觀察（目前做不了）</div>'+grp(bookRec.filter(r=>!canNow(r)));
     sheet.innerHTML='<div class="shead"><h2>'+(bookTab==='dex'?'圖鑑':'配方書')+'</h2><button class="pbtn" type="button" data-x="close" aria-label="關閉配方書">關閉</button></div><div class="btabs" role="tablist"><button class="btab'+(bookTab==='dex'?'':' on')+'" type="button" role="tab" aria-selected="'+(bookTab==='dex'?'false':'true')+'" data-btab="recipe">配方</button><button class="btab'+(bookTab==='dex'?' on':'')+'" type="button" role="tab" aria-selected="'+(bookTab==='dex'?'true':'false')+'" data-btab="dex">圖鑑</button></div><div class="bookbody">'+(bookTab==='dex'?dexHTML():rows)+'</div>'+
       '<div class="note">'+(timeRing&&accWorn.includes('ring')?'時空戒指已裝備，可以在島上製作基本道具。':'在島上製作基本道具，需要先裝備時空戒指（到換裝）。')+'家具與進階配方請走到工坊裡對應的工具台、金工台、釜或織布機。</div>';
-  }else if(panelKind==='exchange'){
-    sheet.innerHTML=exchangeHTML();
   }else if(panelKind==='inn'){
     sheet.innerHTML=innHTML();
-  }else if(panelKind==='vil'){
-    sheet.innerHTML=vilHTML();
   }else if(panelKind==='quest'){
     sheet.innerHTML=questHTML();
   }else if(panelKind==='craft'){
