@@ -817,7 +817,7 @@ const ADV=[ // 占位角色（名字與台詞之後再換）
  {id:'a18',name:'潮音',r:'SR',c:'#8ECDE6',line:'海邊的風會告訴我該去哪裡。'},
  {id:'a19',name:'雲海',r:'SSR',c:'#E6F0FA',line:'站在山頂，能看見整座島的霧。'},
  {id:'a20',name:'星河',r:'SSR',c:'#5C6BC0',line:'夜裡的星砂，我會一顆一顆收好。'}];
-const ADV_PULL_COST=100,ADV_TEN_COST=900,ADV_TEN_N=10,ADV_TOKEN_PULL=10,ADV_PITY=50,ADV_PARTY_MAX=5,ADV_STAR_MAX=5,ADV_EXCH_N=3,ADV_ROSTER_MAX=60,ADV_PRESETS=3;
+const ADV_PULL_COST=100,ADV_TEN_COST=900,ADV_TEN_N=10,ADV_TOKEN_PULL=10,ADV_TOKEN_TEN=90,ADV_PITY=50,ADV_PARTY_MAX=5,ADV_STAR_MAX=5,ADV_EXCH_N=3,ADV_ROSTER_MAX=60,ADV_PRESETS=3;
 const ADV_STAR_COST=1;                       // 每次升星消耗的同角色重複卡數
 const ADV_RELEASE={R:1,SR:3,SSR:8};       // 解約換信物
 const ADV_RPW={R:10,SR:20,SSR:35};        // 稀有度基礎戰力
@@ -878,9 +878,14 @@ function advStarUp(id){const a=adv[id];if(!a)return;const m=advOf(id);
 function advDraw(forceSR){return advApply(advRoll(forceSR));}
 function advPull(){if(coins<ADV_PULL_COST){toast('金幣不足（單抽需要 '+ADV_PULL_COST+' 金幣）。',1600);return;}
   coins-=ADV_PULL_COST;const res=[advDraw(false)];hotbarUI();saveGame();renderPanel();openGacha(res,'single');}
+let gcTok10=false;// 十連來源：金幣或信物（給結果頁的再抽按鈕判斷用）
+function advTenRes(){const res=[];let hit=false;
+  for(let i=0;i<ADV_TEN_N;i++){const force=(i===ADV_TEN_N-1)&&!hit;const rar=advRoll(force);if(ADV_RANK[rar]>=ADV_RANK.SR)hit=true;res.push(advApply(rar));}return res;}
 function advPull10(){if(coins<ADV_TEN_COST){toast('金幣不足（十連需要 '+ADV_TEN_COST+' 金幣）。',1600);return;}
-  coins-=ADV_TEN_COST;const res=[];let hit=false;
-  for(let i=0;i<ADV_TEN_N;i++){const force=(i===ADV_TEN_N-1)&&!hit;const rar=advRoll(force);if(ADV_RANK[rar]>=ADV_RANK.SR)hit=true;res.push(advApply(rar));}
+  coins-=ADV_TEN_COST;const res=advTenRes();gcTok10=false;
+  hotbarUI();saveGame();renderPanel();openGacha(res,'ten');}
+function advPullToken10(){if(token<ADV_TOKEN_TEN){toast('信物不足（十連需要 '+ADV_TOKEN_TEN+' 個信物）。',1600);return;}
+  token-=ADV_TOKEN_TEN;const res=advTenRes();gcTok10=true;
   hotbarUI();saveGame();renderPanel();openGacha(res,'ten');}
 function advPullToken(){if(token<ADV_TOKEN_PULL){toast('信物不足（需要 '+ADV_TOKEN_PULL+' 個信物）。',1600);return;}
   token-=ADV_TOKEN_PULL;const res=[advDraw(false)];hotbarUI();saveGame();renderPanel();openGacha(res,'token');}
@@ -910,8 +915,8 @@ function gcMsg(r){return r.kind==='new'?'新的冒險者加入！':r.kind==='dup
 function openGacha(res,mode){closeGacha();
   const top=res.reduce((b,r)=>ADV_RANK[r.r]>ADV_RANK[b]?r.r:b,'R');
   const el=document.createElement('div');el.id='gacha';el.className='m-'+(mode==='ten'?'ten':'single')+' top-'+top;gcEl=el;
-  const canAgain=mode==='ten'?coins>=ADV_TEN_COST:mode==='token'?token>=ADV_TOKEN_PULL:coins>=ADV_PULL_COST;
-  const againTxt=mode==='ten'?'再十連（'+ADV_TEN_COST+' 金幣）':mode==='token'?'再抽一次（信物）':'再抽一次（'+ADV_PULL_COST+' 金幣）';
+  const canAgain=mode==='ten'?(gcTok10?token>=ADV_TOKEN_TEN:coins>=ADV_TEN_COST):mode==='token'?token>=ADV_TOKEN_PULL:coins>=ADV_PULL_COST;
+  const againTxt=mode==='ten'?(gcTok10?'再十連（'+ADV_TOKEN_TEN+' 信物）':'再十連（'+ADV_TEN_COST+' 金幣）'):mode==='token'?'再抽一次（信物）':'再抽一次（'+ADV_PULL_COST+' 金幣）';
   const bar='<div class="gc-bar"><button class="gc-btn gc-skip" type="button" data-gc="skip">跳過</button><button class="gc-btn gc-after" type="button" data-gc="close">關閉</button><button class="gc-btn go gc-after" type="button" data-gc="again"'+(canAgain?'':' disabled')+'>'+againTxt+'</button></div>';
   let body;
   if(mode==='ten'){body='<div class="gc-title">十連招募</div><div class="gc-flash"></div><div class="gc-grid">'+res.map(gcCell).join('')+'</div><div class="gc-sum">'+gcSummary(res)+'</div>';}
@@ -923,7 +928,7 @@ function openGacha(res,mode){closeGacha();
     const a=b.dataset.gc;
     if(a==='skip')gcDone();
     else if(a==='close')closeGacha();
-    else if(a==='again'){closeGacha();if(mode==='ten')advPull10();else if(mode==='token')advPullToken();else advPull();}});
+    else if(a==='again'){closeGacha();if(mode==='ten')(gcTok10?advPullToken10():advPull10());else if(mode==='token')advPullToken();else advPull();}});
   document.body.appendChild(el);
   if(mode==='ten'){res.forEach((r,i)=>gcAt(450+i*300,()=>{if(gcEl===el){const c=el.querySelectorAll('.gc-tc')[i];if(c)c.classList.add('op');}}));
     gcAt(450+res.length*300+350,gcDone);}
@@ -987,7 +992,7 @@ function advDexHTML(){
   return '<div class="dex"><div class="dex-h">角色圖鑑　<span class="note">已獲得 '+got+' / '+ADV.length+'</span></div><div class="dex-g">'+tiles+'</div></div>';}
 function pullHTML(){
   return '<div class="note">金幣 '+coins+'　信物 '+token+'　距離保底還差 '+(ADV_PITY-pity)+' 抽　冒險者 '+Object.keys(adv).length+' / '+ADV_ROSTER_MAX+'</div>'+
-  '<div class="row"><button class="pbtn go" type="button" data-x="pull"'+(coins<ADV_PULL_COST?' disabled':'')+'>單抽（'+ADV_PULL_COST+' 金幣）</button><button class="pbtn go" type="button" data-x="pull10"'+(coins<ADV_TEN_COST?' disabled':'')+'>十連（'+ADV_TEN_COST+' 金幣）</button><button class="pbtn" type="button" data-x="pulltoken"'+(token<ADV_TOKEN_PULL?' disabled':'')+'>信物抽（'+ADV_TOKEN_PULL+' 信物）</button></div>'+
+  '<div class="row"><button class="pbtn go" type="button" data-x="pull"'+(coins<ADV_PULL_COST?' disabled':'')+'>單抽（'+ADV_PULL_COST+' 金幣）</button><button class="pbtn go" type="button" data-x="pull10"'+(coins<ADV_TEN_COST?' disabled':'')+'>十連（'+ADV_TEN_COST+' 金幣）</button><button class="pbtn" type="button" data-x="pulltoken"'+(token<ADV_TOKEN_PULL?' disabled':'')+'>信物抽（'+ADV_TOKEN_PULL+' 信物）</button><button class="pbtn" type="button" data-x="pulltoken10"'+(token<ADV_TOKEN_TEN?' disabled':'')+'>信物十連（'+ADV_TOKEN_TEN+' 信物）</button></div>'+
   '<div class="note">機率：R 80%、SR 17%、SSR 3%；金幣抽與信物抽共用保底，第 '+ADV_PITY+' 抽必出 SSR。十連必定至少 1 位 SR 以上。重複抽到會獲得重複卡，在冒險者頁消耗重複卡升星（最高 5 星）。冒險者滿 '+ADV_ROSTER_MAX+' 位時，新抽到的會自動解約換信物。</div>'+advDexHTML();}
 function taskHTML(){
   const tasks=dayTasks();const busy=advBusy();
@@ -1121,6 +1126,7 @@ sheet.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)retu
   else if(t.dataset.x==='pull'){advPull();}
   else if(t.dataset.x==='pull10'){advPull10();}
   else if(t.dataset.x==='pulltoken'){advPullToken();}
+  else if(t.dataset.x==='pulltoken10'){advPullToken10();}
   else if(t.dataset.x==='dispatch'){advStart();}
   else if(t.dataset.x==='claimdisp'){advClaim(+t.dataset.i);}
   else if(t.dataset.x==='exch'){advExch(t.dataset.k);}
