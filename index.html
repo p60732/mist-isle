@@ -713,7 +713,7 @@ function catUsed(cat,extra){const v=Object.assign({},inv);let n=0;
 const fits=e=>catUsed(e.tool?'item':catOfItem(e.k),e)<=BAG_MAX;
 const cellCat=c=>c.t?'item':catOfItem(c.k);
 const FULL='背包已滿';
-let stamina=100;const STA_OFFLINE_MIN=3;let offlineGain=0;
+let stamina=100;const STA_OFFLINE_MIN=3;let offlineGain=0,staRegenT=0;
 const maxStam=()=>accWorn.includes('earring')?120:100;
 const RECIPES=[
  {id:'axe',st:'bench',name:'簡易斧',need:{branch:5},make:()=>{tools.axe.push({kind:'簡易斧',dur:40,max:40,fell:false});},tool:true,note:'耐久 40，砍不倒樹'},
@@ -1292,6 +1292,8 @@ let wasHit=false,bumpT=0;let inside=false,layout=false,layMode='place',laySel=''
 const DOOR_IN={x:7.6,z:6.6};let last=performance.now(),walk=0,blockedAt=0,lastRegion='';
 function frame(now){
   const dt=Math.min(0.05,(now-last)/1000);last=now;const t=now/1000;
+  // 遊玩中也恢復體力：與離線相同速率（每 STA_OFFLINE_MIN 真實分鐘 +1）
+  staRegenT+=dt;if(staRegenT>=STA_OFFLINE_MIN*60){staRegenT-=STA_OFFLINE_MIN*60;if(stamina<maxStam()){stamina++;staUI();}}
   gameMin+=dt*1.6;updateDispProgress();{const di=Math.floor((gameMin-300)/1440)+1;if(di>day){day=di;newDay();}}{$('miniTime').textContent=fmtClock();}
 
   // move
