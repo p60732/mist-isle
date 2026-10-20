@@ -129,6 +129,10 @@ body.inside #mini,body.inside #miniN,body.inside #miniTime{display:none}
 @media (prefers-reduced-motion:reduce){.tl{transition:none}}
 #dark{position:fixed;inset:0;z-index:2;pointer-events:none;display:none;background:radial-gradient(circle at var(--dx,50%) var(--dy,50%),rgba(8,6,12,0) var(--dr,0px),rgba(8,6,12,.92) calc(var(--dr,0px) + 70px))}
 #dark.on{display:block}
+/* 立繪動態：呼吸起伏，手指或滑鼠移過時 2.5D 傾斜 */
+.live{transform-origin:50% 92%;animation:lvBreath 3.6s ease-in-out infinite;will-change:transform;transition:transform .25s ease-out}
+.live.tilt{animation:none;transition:transform .08s linear}
+@keyframes lvBreath{0%,100%{transform:scale(1)}50%{transform:scale(1.018) translateY(-1px)}}
 /* 抽卡動畫覆蓋層 */
 #gacha{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));background:radial-gradient(ellipse at 50% 40%,#2e2644 0%,#110d1c 72%);color:#fff;overflow:hidden;-webkit-user-select:none;user-select:none;touch-action:manipulation}
 #gacha .gc-title{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));left:0;right:0;text-align:center;font-size:13px;letter-spacing:.25em;color:#cbbfe6}
@@ -823,8 +827,8 @@ function advPower(id){const a=adv[id],m=advOf(id);if(!a||!m)return 0;let p=ADV_R
   Object.values(a.eq||{}).forEach(g=>{const gg=g&&gearOf(g);if(gg)p+=gg.pw;});return p;}
 function partyPower(ids){return ids.reduce((s,id)=>s+advPower(id),0);}
 function advChance(power,need){return Math.max(0.05,Math.min(0.95,power/need*0.8));}
-const ADV_IMG={a20:'assets/portraits/a20.jpg'};
-function portrait(m,sz){if(ADV_IMG[m.id])return '<img class="pt" alt="'+m.name+'" src="'+ADV_IMG[m.id]+'" style="width:'+sz+'px;height:'+sz+'px;object-fit:cover;background:'+m.c+'">';return '<span class="pt" style="background:'+m.c+';width:'+sz+'px;height:'+sz+'px;font-size:'+Math.round(sz*0.42)+'px">'+m.name[0]+'</span>';}
+const ADV_IMG={a1:'assets/portraits/a1.jpg',a18:'assets/portraits/a18.jpg',a19:'assets/portraits/a19.jpg',a20:'assets/portraits/a20.jpg'};
+function portrait(m,sz){if(ADV_IMG[m.id])return '<img class="pt live" alt="'+m.name+'" src="'+ADV_IMG[m.id]+'" style="width:'+sz+'px;height:'+sz+'px;object-fit:cover;background:'+m.c+'">';return '<span class="pt" style="background:'+m.c+';width:'+sz+'px;height:'+sz+'px;font-size:'+Math.round(sz*0.42)+'px">'+m.name[0]+'</span>';}
 function advBusy(){return new Set(disp.flatMap(d=>d.ids));}
 // 招募：金幣抽與信物抽共用保底；冒險者滿額時新角色自動解約換信物
 // forceSR：十連保底用，本次至少出 SR（SR 與 SSR 的比例沿用 17:3）
@@ -856,7 +860,7 @@ function gcDone(){if(!gcEl)return;gcClear();
   gcEl.querySelectorAll('.gc-tc').forEach(c=>c.classList.add('op'));}
 function gcCard(r){const m=advOf(r.id);
   const tag=r.kind==='new'?'<span class="gc-tag">NEW</span>':r.kind==='star'?'<span class="gc-tag st">★'+r.stars+'</span>':'<span class="gc-tag rl">信物 +'+r.tok+'</span>';
-  return '<div class="gc-card gc-big" style="--c:'+m.c+';--rc:'+RAR_CLR[r.r]+'"><div class="gc-art">'+(ADV_IMG[m.id]?'<img class="gc-img" alt="'+m.name+'" src="'+ADV_IMG[m.id]+'">':'<span class="gc-ini">'+m.name[0]+'</span>')+'</div>'+
+  return '<div class="gc-card gc-big" style="--c:'+m.c+';--rc:'+RAR_CLR[r.r]+'"><div class="gc-art">'+(ADV_IMG[m.id]?'<img class="gc-img live" alt="'+m.name+'" src="'+ADV_IMG[m.id]+'">':'<span class="gc-ini">'+m.name[0]+'</span>')+'</div>'+
     '<div class="gc-info"><span class="gc-rr">'+r.r+'</span><b>'+m.name+'</b><p class="gc-line">'+m.line+'</p></div>'+tag+'</div>';}
 function gcCell(r){const m=advOf(r.id);
   const tag=r.kind==='new'?'<span class="tc-tag">NEW</span>':r.kind==='star'?'<span class="tc-tag st">★'+r.stars+'</span>':'<span class="tc-tag rl">+'+r.tok+'</span>';
@@ -1482,11 +1486,16 @@ function loadGame(){let d=null;try{d=JSON.parse(localStorage.getItem(SAVE_KEY)||
   tierShownLv=tierNow();hotbarUI();staUI();return true;}
 const loaded=loadGame();
 if(offlineGain>0)setTimeout(()=>toast('離線期間體力 +'+offlineGain,2000),1200);
-// 測試用：網址加 ?dev=1 時每次載入加 5000 金幣（正式上線前可移除）
-if(/[?&]dev=1/.test(location.search)){coins+=5000;saveGame();}
+// 測試用：網址加 ?dev=1 時每次載入加 5000 金幣，並把所有角色加入冒險者（正式上線前移除）
+if(/[?&]dev=1/.test(location.search)){coins+=5000;ADV.forEach(a=>{if(!adv[a.id]&&Object.keys(adv).length<ADV_ROSTER_MAX)adv[a.id]={stars:1,eq:{}};});saveGame();}
 if(purified){lerps.forEach(l=>l.m.color.copy(l.b));rocks.forEach(rockTint);}
 setInterval(saveGame,10000);
 addEventListener('pagehide',saveGame);
+// 立繪傾斜：指標移過 .live 時依位置旋轉，離開時回正
+document.addEventListener('pointermove',e=>{const el=e.target.closest&&e.target.closest('.live');if(!el)return;
+  const r=el.getBoundingClientRect();const x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;
+  el.classList.add('tilt');el.style.transform='perspective(420px) rotateY('+(x*14).toFixed(2)+'deg) rotateX('+(-y*10).toFixed(2)+'deg) scale(1.02)';});
+document.addEventListener('pointerout',e=>{const el=e.target.closest&&e.target.closest('.live');if(el&&!el.contains(e.relatedTarget)){el.classList.remove('tilt');el.style.transform='';}});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)saveGame();});
 window.__save={save:saveGame,load:loadGame,key:SAVE_KEY,loaded};
 requestAnimationFrame(frame);
