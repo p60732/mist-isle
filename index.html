@@ -555,7 +555,15 @@ function buildCaveLevel(lv){lv.group=new THREE.Group();lv.group.visible=false;sc
 }
 // mound + entrance (outside the cave floor)
 {const mound=part(new THREE.DodecahedronGeometry(3.2,1),toon(0x8C877F),CAVE_E.x,1.0,CAVE_E.z,null,0.08);mound.scale.set(1.2,0.75,1.0);
- const mouth=new THREE.Mesh(new THREE.CircleGeometry(1.1,16),new THREE.MeshBasicMaterial({color:0x2A2328}));mouth.position.set(CAVE_E.x,0.75,CAVE_E.z+3.25);mouth.scale.set(0.9,1.35,1);scene.add(mouth);
+ // entrance: dark hole + wooden mine frame + dark patch on the ground, readable from the steep phone camera too
+ const ex=CAVE_E.x,ez=CAVE_E.z+3.45,holeM=bend(new THREE.MeshBasicMaterial({color:0x221C20,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}));
+ const hole=new THREE.Mesh(new THREE.CircleGeometry(1.0,18,0,Math.PI),holeM);hole.position.set(ex,0.95,ez);hole.scale.set(0.95,1.0,1);scene.add(hole);
+ const holeB=new THREE.Mesh(new THREE.PlaneGeometry(1.9,0.95),holeM);holeB.position.set(ex,0.48,ez);scene.add(holeB);
+ const patch=new THREE.Mesh(new THREE.CircleGeometry(1.2,18),bend(new THREE.MeshBasicMaterial({color:0x3A3236,transparent:true,opacity:0.55,depthWrite:false})));
+ patch.rotation.x=-Math.PI/2;patch.scale.set(1,0.7,1);patch.position.set(ex,0.05,ez+0.55);scene.add(patch);
+ const wood=toon(0x8A5A36),postG=new THREE.BoxGeometry(0.3,2.1,0.3);
+ part(postG,wood,ex-1.1,1.05,ez+0.12,null,0.1);part(postG,wood,ex+1.1,1.05,ez+0.12,null,0.1);
+ part(new THREE.BoxGeometry(2.8,0.34,0.4),wood,ex,2.2,ez+0.12,null,0.08);
  colliders.push({x:CAVE_E.x,z:CAVE_E.z,r:3.5});}
 caveLv.forEach(buildCaveLevel);
 function setCaveLevel(n){caveLevel=n;caveCols=caveLv[n].cols;caveLv.forEach((l,i)=>{l.group.visible=inCave&&i===n;});}
@@ -1318,7 +1326,7 @@ function fmtClock(){const h=Math.floor(gameMin/60)%24,m=Math.floor(gameMin%60);r
 
 // ---- maps ----
 const mini=$('mini'),big=$('big'),mapOv=$('mapOv');
-const LABELS=[['小谷村',-6,6],['燈芯樹',0,-17],['火苔之森',0,-42],['潮汐海岸',45,4],['工坊',9,-1],['碼頭',0,58]];
+const LABELS=[['小谷村',-6,6],['燈芯樹',0,-17],['火苔之森',0,-42],['潮汐海岸',45,4],['工坊',9,-1],['碼頭',0,58],['礦洞',-42,3]];
 function drawMap(ctx,w,h,cx,cz,sc,full){
   const X=x=>w/2+(x-cx)*sc,Y=z=>h/2+(z-cz)*sc;
   ctx.clearRect(0,0,w,h);ctx.fillStyle='#6EC3DE';ctx.fillRect(0,0,w,h);
@@ -1336,6 +1344,9 @@ function drawMap(ctx,w,h,cx,cz,sc,full){
   ctx.save();ctx.translate(X(9),Y(4));ctx.rotate(0.5);ctx.fillStyle='#D9694F';ctx.fillRect(-2.5*sc,-2.1*sc,5*sc,4.2*sc);ctx.restore();
   ctx.fillStyle='#F7D154';ctx.strokeStyle='#C99A1E';ctx.lineWidth=2;ctx.beginPath();ctx.arc(X(0),Y(-13),Math.max(4,2.6*sc),0,7);ctx.fill();ctx.stroke();
   if(purified){ctx.fillStyle='#E0663F';ctx.beginPath();ctx.arc(X(2),Y(-36),Math.max(3,1.6*sc),0,7);ctx.fill();}
+  // 礦洞入口
+  ctx.fillStyle='#8C877F';ctx.strokeStyle='#5A544D';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(X(CAVE_E.x),Y(CAVE_E.z),Math.max(5,3.4*sc),0,7);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#221C20';ctx.beginPath();ctx.arc(X(CAVE_E.x),Y(CAVE_E.z+2),Math.max(2,1.2*sc),0,7);ctx.fill();
   mushes.forEach(m=>{if(!m.alive)return;ctx.fillStyle='#E8584A';ctx.beginPath();ctx.arc(X(m.x),Y(m.z),Math.max(2,0.8*sc),0,7);ctx.fill();});
   if(full){
     ctx.font='700 '+Math.round(13+sc*0.6)+'px '+getComputedStyle(document.body).fontFamily;ctx.textAlign='center';ctx.textBaseline='middle';
