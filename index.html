@@ -268,6 +268,7 @@ body.inside #mini,body.inside #miniN,body.inside #miniTime{display:none}
 <button id="act2" type="button" hidden>搖樹</button>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script>
 (function(){
 const canvas=document.getElementById('c');
@@ -606,6 +607,36 @@ const hair=part(new THREE.SphereGeometry(0.6,14,10,0,Math.PI*2,0,Math.PI*0.55),t
 const eyeG=new THREE.SphereGeometry(0.07,6,5),eyeM=new THREE.MeshBasicMaterial({color:0x3B2A1E});bend(eyeM);
 [-0.2,0.2].forEach(x=>{const e=new THREE.Mesh(eyeG,eyeM);e.position.set(x,1.86,0.5);body.add(e);});
 const shadow=new THREE.Mesh(new THREE.CircleGeometry(0.8,16),bend(new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.18,depthWrite:false})));shadow.rotation.x=-Math.PI/2;shadow.position.y=0.04;player.add(shadow);
+
+// player 3D model — placeholder: KayKit Mage (CC0). Swap CHAR_URL for the final chibi model later.
+// If the file or loader is missing, the primitive body above stays visible.
+const CHAR_URL='assets/models/mage.glb',CHAR_H=2.55,CHAR_HIDE=['Mage_Hat'];
+let charMixer=null,charCur=null,charOne=0,charMoveK=0;const charActs={};
+function charPlay(name,fade){const a=charActs[name];if(!a||a===charCur)return;a.reset().fadeIn(fade||0.2).play();if(charCur)charCur.fadeOut(fade||0.2);charCur=a;}
+function charAct(name){const a=charActs[name];if(!a)return;a.setLoop(THREE.LoopOnce,1);a.clampWhenFinished=true;charOne=a.getClip().duration*0.9;
+  if(a===charCur){a.reset().play();return;}a.reset().fadeIn(0.1).play();if(charCur)charCur.fadeOut(0.1);charCur=a;}
+(function loadChar(){
+  if(!THREE.GLTFLoader)return;
+  const olM=bend(new THREE.MeshBasicMaterial({color:0x3B2A1E,side:THREE.BackSide,skinning:true}));
+  const bendOC=olM.onBeforeCompile;
+  // push the hull out along the bind-pose normal so it follows the skeleton
+  olM.onBeforeCompile=function(sh){bendOC(sh);sh.vertexShader=sh.vertexShader.replace('#include <begin_vertex>','vec3 transformed = vec3( position ) + normal * 0.045;');};
+  new THREE.GLTFLoader().load(CHAR_URL,g=>{
+    const m=g.scene,skins=[];
+    m.traverse(o=>{if(CHAR_HIDE.includes(o.name))o.visible=false;});
+    m.traverse(o=>{if(!o.isMesh||!o.visible)return;o.frustumCulled=false;const map=o.material.map;if(map)map.encoding=THREE.LinearEncoding;
+      o.material=bend(new THREE.MeshToonMaterial({map,gradientMap:grad,skinning:!!o.isSkinnedMesh}));
+      if(o.isSkinnedMesh)skins.push(o);});
+    skins.forEach(o=>{const ol=new THREE.SkinnedMesh(o.geometry,olM);ol.position.copy(o.position);ol.quaternion.copy(o.quaternion);ol.scale.copy(o.scale);
+      ol.bind(o.skeleton,o.bindMatrix);ol.frustumCulled=false;o.parent.add(ol);});
+    m.updateMatrixWorld(true);const box=new THREE.Box3();m.traverse(o=>{if(o.isMesh&&o.visible&&o.material!==olM)box.expandByObject(o);});const h=box.max.y-box.min.y||1,s=CHAR_H/h;
+    m.scale.setScalar(s);m.position.y=-box.min.y*s;
+    body.children.slice().forEach(c=>{c.visible=false;});body.add(m);
+    charMixer=new THREE.AnimationMixer(m);
+    g.animations.forEach(c=>{charActs[c.name]=charMixer.clipAction(c);});
+    charPlay('Idle',0);
+  },undefined,()=>{});
+})();
 
 // lantern moth
 const moth=new THREE.Group();scene.add(moth);
@@ -1230,7 +1261,7 @@ function doAction(){
   if(a==='need'){toast(ctx.msg,2200);return;}
   if(a==='station'){const st=STATIONS.find(o=>o.id===ctx.s);face(st.x,st.z);craftSt=ctx.s;openPanel('craft');return;}
   if(a==='craft'){craftSt='ring';openPanel('craft');return;}
-  if(a==='node'){const n=ctx.n;const k=n.kind;if(!fits({k,n:1})){toast(FULL,2000);return;}face(n.x,n.z);n.taken=true;inv[k]=(inv[k]||0)+1;qAdd('node');hotbarUI();toast('獲得'+NAME[k]+' ×1',1400);return;}
+  if(a==='node'){const n=ctx.n;const k=n.kind;if(!fits({k,n:1})){toast(FULL,2000);return;}face(n.x,n.z);charAct('PickUp');n.taken=true;inv[k]=(inv[k]||0)+1;qAdd('node');hotbarUI();toast('獲得'+NAME[k]+' ×1',1400);return;}
   if(a==='sleep'){face(ctx.x,ctx.z);openPanel('sleep');return;}
   if(a==='chest'){face(ctx.x,ctx.z);openPanel('chest');return;}
   if(a==='sit'){sitting=ctx.rot;player.position.set(ctx.x,0.64,ctx.z);player.rotation.y=ctx.rot*Math.PI/2;return;}
@@ -1238,30 +1269,30 @@ function doAction(){
   if(a==='cavein'){enterCave();return;}
   if(a==='caveout'){exitCave();return;}
   if(a==='caveladder'){const to=caveLevel===0?1:0;caveGoTo(to,0,-3.8,Math.PI);toast(to?'爬下梯子，來到地底一層。':'爬上梯子，回到礦洞第一層。',1800);return;}
-  if(a==='cavemine'){const o=ctx.o;if(!fits({k:o.k,n:1})){toast(FULL,2000);return;}face(o.x,o.z);useTool('pick');o.hits++;inv[o.k]=(inv[o.k]||0)+1;hotbarUI();
+  if(a==='cavemine'){const o=ctx.o;if(!fits({k:o.k,n:1})){toast(FULL,2000);return;}face(o.x,o.z);charAct('1H_Melee_Attack_Chop');useTool('pick');o.hits++;inv[o.k]=(inv[o.k]||0)+1;hotbarUI();
     if(o.hits>=o.need){o.state='gone';o.parts.forEach(m=>{m.visible=false;});o.col.r=0;o.col.x=-999;o.col.z=-999;toast(NAME[o.k]+' +1。礦脈採完了，明天重生。',1900);}
     else toast(NAME[o.k]+' +1（還能敲 '+(o.need-o.hits)+' 下）',1100);return;}
   if(a==='enter'){inside=true;document.body.classList.add('inside');player.position.set(RX,0,RZ+HALF-2.6);player.rotation.y=Math.PI;camPos.set(RX,12,RZ+HALF+9);curveU.value=0;scene.background=new THREE.Color(0x3A302B);scene.fog=null;toast('回到工坊。按「布置」擺放家具。',3000);return;}
   if(a==='exit'){inside=false;document.body.classList.remove('inside');player.position.set(7.3,0,7.1);player.rotation.y=-0.5;camPos.set(7.3,21,25);curveU.value=curveOn?CURVE:0;scene.background=new THREE.Color(SKY);scene.fog=new THREE.Fog(SKY,95,200);return;}
   if(a==='layout'){startLayout();return;}
-  if(a==='pick'){if(!fits({k:'mush',n:1})){toast(FULL,2000);return;}const m=ctx.m;face(m.x,m.z);m.alive=false;scene.remove(m.g);inv.mush++;qAdd('pick');hotbarUI();toast('獲得紅帽蘑菇 ×1',1400);}
+  if(a==='pick'){if(!fits({k:'mush',n:1})){toast(FULL,2000);return;}const m=ctx.m;face(m.x,m.z);charAct('PickUp');m.alive=false;scene.remove(m.g);inv.mush++;qAdd('pick');hotbarUI();toast('獲得紅帽蘑菇 ×1',1400);}
   else if(a==='chop'){const t=ctx.t;face(t.x,t.z);const ax=T('axe');
     if(!ax.fell&&t.wood<=0){t.t=0.32;toast('這棵樹今天沒有木材了，換一棵吧。',1800);return;}
     if(t.wood>0&&!fits({k:'wood',n:1})){toast(FULL,2000);return;}
-    useTool('axe');t.hits++;qAdd('chop');t.t=0.32;let msg='';
+    charAct('1H_Melee_Attack_Chop');useTool('axe');t.hits++;qAdd('chop');t.t=0.32;let msg='';
     if(t.wood>0){t.wood--;inv.wood++;msg='獲得木材 ×1';}
     if(ax.fell&&t.hits>=3){t.state='falling';t.t=0;msg='樹倒了';}
     hotbarUI();toast(msg||'咚！',1400);}
-  else if(a==='shake'){const t=ctx.t;face(t.x,t.z);t.t=0.45;if(t.branches<=0){toast('這棵樹今天的樹枝搖光了。',1400);return;}
+  else if(a==='shake'){const t=ctx.t;face(t.x,t.z);charAct('Interact');t.t=0.45;if(t.branches<=0){toast('這棵樹今天的樹枝搖光了。',1400);return;}
     if(Math.random()<0.8){const n=Math.min(t.branches,Math.random()<0.45?2:1);if(!fits({k:'branch',n})){toast(FULL,2000);return;}t.branches-=n;qAdd('shake');inv.branch=(inv.branch||0)+n;let ex='';if(Math.random()<0.15&&fits({k:'bug',n:1})){inv.bug=(inv.bug||0)+1;ex+='，還掉下了蟲子！';}if(Math.random()<0.1&&fits({k:'honey',n:1})){inv.honey=(inv.honey||0)+1;ex+='，還掉下了蜂蜜！';}hotbarUI();toast('獲得樹枝 ×'+n+ex.replace('，還掉下了','、').replace('！',''),1200);}else toast('沒有掉落',1000);}
-  else if(a==='stump'){const t=ctx.t;face(t.x,t.z);useTool('axe');t.stumpHits++;
+  else if(a==='stump'){const t=ctx.t;face(t.x,t.z);charAct('1H_Melee_Attack_Chop');useTool('axe');t.stumpHits++;
     if(t.stumpHits<2){toast('咚！樹樁裂開了，再砍一下就能清乾淨。',1400);return;}
     t.state='gone';t.g.visible=false;t.col.r=0;t.col.x=-999;t.col.z=-999;t.dot.x=-999;t.dot.z=-999;
     toast('樹樁清乾淨了，明天會長出新樹。',2400);}
   else if(a==='mine'){const r=ctx.r;face(r.x,r.z);const q=Math.random();const k=q<0.55?'stone':q<0.75?'clay':q<0.9?'iron':'crys';if(!fits({k,n:1})){toast(FULL,2000);return;}
-    useTool('pick');r.hits++;qAdd('mine');r.t=0.25;inv[k]=(inv[k]||0)+1;let msg='獲得'+NAME[k]+' ×1';if(r.hits>=8){shatterRock(r);msg='獲得'+NAME[k]+' ×1，石頭碎了';}if(Math.random()<0.12&&fits({k:'bug',n:1})){inv.bug=(inv.bug||0)+1;msg+='、蟲子';}if(r.forest&&purified){if(Math.random()<0.12&&fits({k:'moss',n:1})){inv.moss=(inv.moss||0)+1;msg+='、苔癬';}if(Math.random()<0.12&&fits({k:'fern',n:1})){inv.fern=(inv.fern||0)+1;msg+='、蕨類';}}
+    charAct('1H_Melee_Attack_Chop');useTool('pick');r.hits++;qAdd('mine');r.t=0.25;inv[k]=(inv[k]||0)+1;let msg='獲得'+NAME[k]+' ×1';if(r.hits>=8){shatterRock(r);msg='獲得'+NAME[k]+' ×1，石頭碎了';}if(Math.random()<0.12&&fits({k:'bug',n:1})){inv.bug=(inv.bug||0)+1;msg+='、蟲子';}if(r.forest&&purified){if(Math.random()<0.12&&fits({k:'moss',n:1})){inv.moss=(inv.moss||0)+1;msg+='、苔癬';}if(Math.random()<0.12&&fits({k:'fern',n:1})){inv.fern=(inv.fern||0)+1;msg+='、蕨類';}}
     hotbarUI();toast(msg,1500);}
-  else if(a==='purify'){inv.potion--;hotbarUI();purifyT=0;ring.position.set(player.position.x,0.2,player.position.z);toast('把淨霧藥劑灑向灰霧……',2200);}
+  else if(a==='purify'){charAct('Use_Item');inv.potion--;hotbarUI();purifyT=0;ring.position.set(player.position.x,0.2,player.position.z);toast('把淨霧藥劑灑向灰霧……',2200);}
   else if(a==='tree'){face(0,-13);toast('燈芯樹微微發光。啾燈：「這是大媽媽！」',3600);}
   else if(a==='spirit'){face(spirit.position.x,spirit.position.z);toast('火苔精：「呼啊……你身上有大媽媽的光呢。」',3800);}
   else if(a==='blocked'){toast(ctx.msg,2600);}
@@ -1450,8 +1481,14 @@ function frame(now){
     wasHit=hit;
     p.x=nx;p.z=nz;
     player.rotation.y=Math.atan2(mx,mz);walk+=dt*12;
-    body.position.y=Math.abs(Math.sin(walk))*0.14;
-  }else{body.position.y*=0.8;wasHit=false;}
+    body.position.y=charMixer?0:Math.abs(Math.sin(walk))*0.14;charMoveK=ml;
+  }else{body.position.y*=0.8;wasHit=false;charMoveK=0;}
+  if(charMixer){
+    if(charOne>0)charOne-=dt;
+    else charPlay(sitting!==null?'Sit_Chair_Idle':charMoveK>0.6?'Running_A':charMoveK>0.08?'Walking_A':'Idle');
+    body.position.y=sitting!==null?-0.3:0; // sit clip lifts hips/feet off the root; drop onto the seat
+    charMixer.update(dt);
+  }
   if(bumpT>0){bumpT-=dt;const k=Math.max(0,bumpT)/0.18;body.scale.set(1+0.18*k,1-0.16*k,1+0.18*k);}else body.scale.set(1,1,1);
 
   // camera
