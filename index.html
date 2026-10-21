@@ -1285,8 +1285,9 @@ function drawMap(ctx,w,h,cx,cz,sc,full){
   ctx.fillStyle=purified?'#5E9E4A':fog;ctx.fillRect(0,0,w,Y(-21));
   ctx.fillStyle=fog;ctx.fillRect(X(28),Y(-21),w,h);
   treeDots.forEach(t=>{ctx.fillStyle=t.f&&!purified?'#8E8C9C':'#3F8A3F';ctx.beginPath();ctx.arc(X(t.x),Y(t.z),Math.max(1.2,1.1*sc),0,7);ctx.fill();});
+  // 島南側的木樁：限制在島的範圍內，不再伸到海裡
+  ctx.fillStyle='#B07A4A';ctx.fillRect(X(-1.5),Y(R-5),3*sc,3*sc);
   ctx.restore();
-  ctx.fillStyle='#B07A4A';ctx.fillRect(X(-1.5),Y(R-2),3*sc,11*sc);
   ctx.save();ctx.translate(X(9),Y(4));ctx.rotate(0.5);ctx.fillStyle='#D9694F';ctx.fillRect(-2.5*sc,-2.1*sc,5*sc,4.2*sc);ctx.restore();
   ctx.fillStyle='#F7D154';ctx.strokeStyle='#C99A1E';ctx.lineWidth=2;ctx.beginPath();ctx.arc(X(0),Y(-13),Math.max(4,2.6*sc),0,7);ctx.fill();ctx.stroke();
   if(purified){ctx.fillStyle='#E0663F';ctx.beginPath();ctx.arc(X(2),Y(-36),Math.max(3,1.6*sc),0,7);ctx.fill();}
