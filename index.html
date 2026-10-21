@@ -340,14 +340,14 @@ for(let i=0;i<14;i++){
 
 // trees
 const coneG1=new THREE.ConeGeometry(1.7,3,7),coneG2=new THREE.ConeGeometry(1.25,2.4,7),trunkG=new THREE.CylinderGeometry(0.28,0.38,1.6,6);
-const trees=[];
+const trees=[];const TREE_R=1.1; // collider radius per unit scale; covers the lower canopy at head height
 function ownMat(base,forest){const m=bend(base.clone());m.transparent=false;if(forest){const L=lerps.find(l=>l.m===base);lerps.push({m,a:L.a,b:L.b});}return m;}
 function tree(x,z,forest){
   const g=new THREE.Group();g.position.set(x,0,z);const s=0.8+rnd()*0.6;g.scale.setScalar(s);g.rotation.y=rnd()*6;
   const mT=ownMat(forest?fTrunk:toon(0x8A5A36),forest),m1=ownMat(forest?fLeaf:toon(0x4E9E4A),forest),m2=ownMat(forest?fLeaf2:toon(0x5DAE55),forest);
   const trunk=part(trunkG,mT,0,0.8,0,g,0.12),c1=part(coneG1,m1,0,2.8,0,g,0.07),c2=part(coneG2,m2,0,4.1,0,g,0.08);
   const cut=new THREE.Mesh(new THREE.CircleGeometry(0.3,10),toon(0xE8C48E));cut.rotation.x=-Math.PI/2;cut.position.y=0.575;cut.visible=false;g.add(cut);
-  const col={x,z,r:0.75*s};
+  const col={x,z,r:TREE_R*s};
   scene.add(g);colliders.push(col);const dot={x,z,f:forest};treeDots.push(dot);
   trees.push({g,x,z,s,forest,trunk,crown:[c1,c2],mats:[mT,m1,m2],outlines:[trunk,c1,c2].map(m=>m.children[0]),alpha:1,hits:0,state:'up',t:0,col,rotY:g.rotation.y,wood:3,branches:4,cut,dot,stumpHits:0});
 }
@@ -476,9 +476,19 @@ function relocateRock(r){const p=findSpot(()=>polar(14,56),200);if(!p)return;r.x
   r.m.position.set(p.x,0.4,p.z);r.m.visible=true;r.m.scale.set(r.sc[0],r.sc[1],r.sc[2]);r.forest=inForest(p.x,p.z);rockTint(r);r.state='full';r.hits=0;r.t=0;}
 function resetStones(n){for(let i=nodes.length-1;i>=0;i--){if(nodes[i].kind==='stone'){scene.remove(nodes[i].g);nodes.splice(i,1);}}
   for(let i=0;i<n;i++){const p=findSpot(()=>polar(6,34),120);if(p&&nodes.every(o=>Math.hypot(o.x-p.x,o.z-p.z)>0.8))addNode('stone',p.x,p.z);}}
+const gatherFree=(q,m)=>mushes.every(o=>Math.hypot(o.x-q.x,o.z-q.z)>m)&&nodes.every(o=>Math.hypot(o.x-q.x,o.z-q.z)>m);
+function moveGather(o,x,z){o.x=x;o.z=z;o.g.position.set(x,0,z);}
+const GATHER_SPOT={
+  mush:()=>findSpot(()=>polar(6,30),150,q=>!inForest(q.x,q.z)&&Math.hypot(q.x-9,q.z-4)>=5&&gatherFree(q,1.8)),
+  moon:()=>findSpot(()=>polar(8,34),150,q=>!inForest(q.x,q.z)&&gatherFree(q,1.8)),
+  dew:()=>findSpot(()=>polar(5,30),150,q=>!inForest(q.x,q.z)&&gatherFree(q,1.8)),
+  flax:()=>findSpot(()=>({x:(Math.random()-0.5)*50,z:-24-Math.random()*28}),150,q=>inForest(q.x,q.z)&&gatherFree(q,1.8))};
+// every new day mushrooms, moon mushrooms, dew and flax move to fresh random spots (stones are re-rolled by resetStones)
+function scatterGatherables(){mushes.forEach(m=>{const p=GATHER_SPOT.mush();if(p)moveGather(m,p.x,p.z);});
+  nodes.forEach(n=>{const f=GATHER_SPOT[n.kind];if(!f)return;const p=f();if(p)moveGather(n,p.x,p.z);});}
 function relocateTree(t){const p=findSpot(()=>t.forest?{x:(Math.random()-0.5)*80,z:-24-Math.random()*34}:polar(18,59),200,q=>t.forest?inForest(q.x,q.z):!inForest(q.x,q.z));if(!p)return;
   t.x=p.x;t.z=p.z;t.g.position.set(p.x,0,p.z);t.g.visible=true;t.g.rotation.z=0;t.state='up';t.hits=0;t.t=0;t.crown.forEach(c=>c.visible=true);t.cut.visible=false;
-  t.trunk.scale.y=1;t.trunk.position.y=0.8;t.col.x=p.x;t.col.z=p.z;t.col.r=0.75*t.s;t.dot.x=p.x;t.dot.z=p.z;}
+  t.trunk.scale.y=1;t.trunk.position.y=0.8;t.col.x=p.x;t.col.z=p.z;t.col.r=TREE_R*t.s;t.dot.x=p.x;t.dot.z=p.z;}
 function nodeActive(n){if(n.taken)return false;if(n.kind==='moon')return isNight();if(n.kind==='dew')return isDawn();if(n.kind==='flax')return purified;return true;}
 // ===== mine cave (礦洞, trial) =====
 // 礦洞兩層：B0 洞口一層（兩個分岔＋北側梯子），B1 地底一層（水晶礦）。每層有自己的幾何與碰撞，切換時只顯示當層。
@@ -599,6 +609,8 @@ for(let i=0;i<12;i++){
 
 // player
 const player=new THREE.Group();player.position.set(-3,0,20);scene.add(player);
+// don't start inside a tree/rock collider
+colliders.forEach(c=>{if(c.r<=0)return;const dx=player.position.x-c.x,dz=player.position.z-c.z,d=Math.hypot(dx,dz),md=c.r+0.6;if(d>=md)return;if(d<1e-4){player.position.x=c.x+md;return;}player.position.x=c.x+dx/d*md;player.position.z=c.z+dz/d*md;});
 const body=new THREE.Group();player.add(body);
 part(new THREE.CylinderGeometry(0.42,0.85,1.3,10),toon(0x2F7F86),0,0.75,0,body,0.07);
 part(new THREE.CylinderGeometry(0.44,0.44,0.18,10),toon(0xF29E4C),0,0.55,0,body,0.05);
@@ -1425,9 +1437,9 @@ function caveGoTo(n,sx,sz,rot){const L=caveLv[n];setCaveLevel(n);
 function enterCave(){inCave=true;document.body.classList.add('inside');caveGoTo(0,0,4.8,Math.PI);
   toast('礦洞很暗，用鎬敲礦脈採礦。',3000);}
 function exitCave(){inCave=false;caveLv.forEach(l=>{l.group.visible=false;});caveLevel=0;document.body.classList.remove('inside');player.position.set(CAVE_E.x,0,CAVE_E.z+4.3);player.rotation.y=0;camPos.set(CAVE_E.x,21,CAVE_E.z+25);curveU.value=curveOn?CURVE:0;scene.background=new THREE.Color(SKY);scene.fog=new THREE.Fog(SKY,95,200);saveGame();}
-function newDay(){caveOres.forEach(o=>{o.state='full';o.hits=0;o.parts.forEach(m=>{m.visible=true;});o.col.x=o.x;o.col.z=o.z;o.col.r=0.95;});trees.forEach(t=>{t.wood=3;t.branches=4;t.stumpHits=0;if(t.state==='gone'){relocateTree(t);return;}if(t.state!=='up'){t.state='up';t.hits=0;t.t=0;t.g.rotation.z=0;t.crown.forEach(c=>{c.visible=true;});t.cut.visible=false;t.trunk.scale.y=1;t.trunk.position.y=0.8;t.col.r=0.75*t.s;}});
+function newDay(){caveOres.forEach(o=>{o.state='full';o.hits=0;o.parts.forEach(m=>{m.visible=true;});o.col.x=o.x;o.col.z=o.z;o.col.r=0.95;});trees.forEach(t=>{t.wood=3;t.branches=4;t.stumpHits=0;if(t.state==='gone'){relocateTree(t);return;}if(t.state!=='up'){t.state='up';t.hits=0;t.t=0;t.g.rotation.z=0;t.crown.forEach(c=>{c.visible=true;});t.cut.visible=false;t.trunk.scale.y=1;t.trunk.position.y=0.8;t.col.r=TREE_R*t.s;}});
   rocks.forEach(r=>{if(r.state==='gone'){relocateRock(r);return;}r.state='full';r.hits=0;r.regrow=0;r.m.scale.set(r.sc[0],r.sc[1],r.sc[2]);rockTint(r);});
-  mushes.forEach(m=>{if(!m.alive){m.alive=true;scene.add(m.g);}});nodes.forEach(n=>{if(n.kind!=='stone')n.taken=false;});resetStones(10);qDotUI();}
+  mushes.forEach(m=>{if(!m.alive){m.alive=true;scene.add(m.g);}});nodes.forEach(n=>{if(n.kind!=='stone')n.taken=false;});scatterGatherables();resetStones(10);qDotUI();}
 function sleepUntil(hh){closePanel();const bed=items.find(i=>i.id==='f_bed');const c=centerOf(bed.id,bed.ix,bed.iz,bed.rot);
   const th=bed.rot*Math.PI/2;sitting=null;
   // pillow sits 0.95 from bed centre toward the headboard; head centre (local y 1.85) must land on it
@@ -1497,7 +1509,8 @@ function frame(now){
   // camera
   if(layout)camPos.lerp(new THREE.Vector3(RX,40,RZ+5),1-Math.pow(0.0005,dt));
   else if(inside||inCave)camPos.lerp(new THREE.Vector3(p.x,p.y+12,p.z+11),1-Math.pow(0.002,dt));
-  else camPos.lerp(new THREE.Vector3(p.x,p.y+21,p.z+18),1-Math.pow(0.002,dt));
+  // portrait phones have a tall view: tilt the camera steeper so the bent horizon doesn't eat the top of the screen
+  else{const tall=innerHeight>innerWidth;camPos.lerp(new THREE.Vector3(p.x,p.y+(tall?23:21),p.z+(tall?13:18)),1-Math.pow(0.002,dt));}
   camera.position.copy(camPos);if(layout)camLook.set(RX,0,RZ+3);else camLook.set(p.x,p.y+1,p.z-(inside?2:3));camera.lookAt(camLook);
 
   // moth
@@ -1537,7 +1550,7 @@ function frame(now){
     t.outlines.forEach(o=>{o.visible=!fading;});
     if(t.state==='up'){if(t.t>0){t.t-=dt;t.g.rotation.z=Math.sin(t.t*60)*0.06*(t.t/0.32);}else t.g.rotation.z=0;}
     else if(t.state==='falling'){t.t+=dt;const k=Math.min(1,t.t/0.7);t.g.rotation.z=k*k*1.45;if(k>=1){t.state='stump';t.t=0;t.g.rotation.z=0;t.crown.forEach(c=>c.visible=false);t.trunk.scale.y=0.35;t.trunk.position.y=0.28;t.cut.visible=true;t.col.r=0.42*t.s;}}
-    else if(t.state==='stump'){if(false){t.state='up';t.hits=0;t.t=0;t.g.rotation.z=0;t.crown.forEach(c=>{c.visible=true;});t.trunk.scale.y=1;t.trunk.position.y=0.8;t.col.r=0.75*t.s;}}
+    else if(t.state==='stump'){if(false){t.state='up';t.hits=0;t.t=0;t.g.rotation.z=0;t.crown.forEach(c=>{c.visible=true;});t.trunk.scale.y=1;t.trunk.position.y=0.8;t.col.r=TREE_R*t.s;}}
   });
   rocks.forEach(r=>{
     if(r.t>0){r.t-=dt;const k=r.t/0.25;r.m.position.x=r.x+Math.sin(r.t*90)*0.08*k;}else r.m.position.x=r.x;
@@ -1601,7 +1614,7 @@ const SAVE_KEY='mist-isle-save',SAVE_V=1;
 function saveGame(){if(skipSave)return;try{const pos=inside?[7.3,7.1]:inCave?[CAVE_E.x,CAVE_E.z+4.3]:[player.position.x,player.position.z];
   const d={v:SAVE_V,savedAt:Date.now(),inv,tools,store,storeTools,BAG_MAX,day,gameMin,stamina,purified,timeRing,accOwned,accWorn,seen:[...seen],coins,dq,stg,vis,bty,hot:hotCfg,
     furn:items.filter(it=>!it.fixed).map(it=>({id:it.id,ix:it.ix,iz:it.iz,rot:it.rot})),fixedPos:items.filter(it=>it.fixed).map(it=>({id:it.id,ix:it.ix,iz:it.iz,rot:it.rot})),pos,
-    adv,pity,disp,token,gearInv,presets,world:{trees:trees.map(t=>({x:t.x,z:t.z,s:t.state==='falling'?'stump':t.state,h:t.hits,w:t.wood,b:t.branches,sh:t.stumpHits})),rocks:rocks.map(r=>({x:r.x,z:r.z,s:r.state,h:r.hits})),ores:caveOres.map(o=>({s:o.state,h:o.hits})),nodes:nodes.map(n=>({k:n.kind,x:n.x,z:n.z,t:!!n.taken})),mushes:mushes.map(m=>!!m.alive)}};
+    adv,pity,disp,token,gearInv,presets,world:{trees:trees.map(t=>({x:t.x,z:t.z,s:t.state==='falling'?'stump':t.state,h:t.hits,w:t.wood,b:t.branches,sh:t.stumpHits})),rocks:rocks.map(r=>({x:r.x,z:r.z,s:r.state,h:r.hits})),ores:caveOres.map(o=>({s:o.state,h:o.hits})),nodes:nodes.map(n=>({k:n.kind,x:n.x,z:n.z,t:!!n.taken})),mushes:mushes.map(m=>({x:m.x,z:m.z,a:!!m.alive}))}};
   localStorage.setItem(SAVE_KEY,JSON.stringify(d));}catch(e){}}
 // restore broken/felled/mined state of trees, stones and ores (same visuals as when they were broken)
 function applyWorld(w){if(!w)return;
@@ -1615,9 +1628,12 @@ function applyWorld(w){if(!w)return;
     if(s.s==='gone'){o.parts.forEach(m=>{m.visible=false;});o.col.r=0;o.col.x=-999;o.col.z=-999;}});
   // picked-up nodes (stones, moon mushrooms, dew, flax) and picked red mushrooms
   if(Array.isArray(w.nodes)){for(let i=nodes.length-1;i>=0;i--){if(nodes[i].kind==='stone'){scene.remove(nodes[i].g);nodes.splice(i,1);}}
+    const seenK={};
     w.nodes.forEach(s=>{if(s.k==='stone'){addNode('stone',s.x,s.z);nodes[nodes.length-1].taken=!!s.t;return;}
-      const n=nodes.find(o=>o.kind===s.k&&Math.hypot(o.x-s.x,o.z-s.z)<0.05);if(n)n.taken=!!s.t;});}
-  if(Array.isArray(w.mushes))mushes.forEach((m,i)=>{if(w.mushes[i]===false&&m.alive){m.alive=false;scene.remove(m.g);}});}
+      // non-stone nodes move every day: match the i-th saved node of a kind to the i-th live one and restore its spot
+      const i=seenK[s.k]=(seenK[s.k]||0);seenK[s.k]++;const n=nodes.filter(o=>o.kind===s.k)[i];if(n){moveGather(n,s.x,s.z);n.taken=!!s.t;}});}
+  if(Array.isArray(w.mushes))mushes.forEach((m,i)=>{const s=w.mushes[i];const obj=s&&typeof s==='object';if(obj)moveGather(m,s.x,s.z);
+    if((obj?s.a:s)===false&&m.alive){m.alive=false;scene.remove(m.g);}});}
 function loadGame(){let d=null;try{d=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');}catch(e){return false;}
   if(!d||d.v!==SAVE_V)return false;
   inv=Object.assign({mush:0,wood:0,stone:2,crys:0,potion:0,stam:0,branch:0,clay:0,iron:0,flax:0,cloth:0,moon:0,dew:0},d.inv||{});
