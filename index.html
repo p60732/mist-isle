@@ -613,7 +613,9 @@ const shadow=new THREE.Mesh(new THREE.CircleGeometry(0.8,16),bend(new THREE.Mesh
 const CHAR_URL='assets/models/mage.glb',CHAR_H=2.55,CHAR_HIDE=['Mage_Hat'];
 let charMixer=null,charCur=null,charOne=0,charMoveK=0;const charActs={};
 function charPlay(name,fade){const a=charActs[name];if(!a||a===charCur)return;a.reset().fadeIn(fade||0.2).play();if(charCur)charCur.fadeOut(fade||0.2);charCur=a;}
-function charAct(name){const a=charActs[name];if(!a)return;a.setLoop(THREE.LoopOnce,1);a.clampWhenFinished=true;charOne=a.getClip().duration*0.9;
+// one-shot actions play faster than the source clips and briefly hold the player in place so they finish
+const CHAR_ACT_SPEED=1.7;
+function charAct(name){const a=charActs[name];if(!a)return;a.setLoop(THREE.LoopOnce,1);a.clampWhenFinished=true;a.timeScale=CHAR_ACT_SPEED;charOne=a.getClip().duration*0.9/CHAR_ACT_SPEED;
   if(a===charCur){a.reset().play();return;}a.reset().fadeIn(0.1).play();if(charCur)charCur.fadeOut(0.1);charCur=a;}
 (function loadChar(){
   if(!THREE.GLTFLoader)return;
@@ -1452,6 +1454,7 @@ function frame(now){
   if(keys['a']||keys['arrowleft'])mx-=1;if(keys['d']||keys['arrowright'])mx+=1;
   if(keys['w']||keys['arrowup'])mz-=1;if(keys['s']||keys['arrowdown'])mz+=1;
   if(mapOpen||!panel.hidden||layout){mx=0;mz=0;}
+  if(charOne>0){mx=0;mz=0;} // let the gather/chop animation finish before moving
   const ml=Math.hypot(mx,mz);
   const p=player.position;
   if(sitting!==null&&ml>0.08){sitting=null;p.y=0;}
